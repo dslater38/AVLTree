@@ -1,10 +1,11 @@
 #include <memory>
-
+#include <algorithm>
+#include <cassert>
 
 struct node
 {
     uint64_t data{0};
-    uint32_t bf{0};
+    int32_t bf{0};
 	struct node *left{nullptr};
     struct node *right{nullptr};
 };
@@ -12,46 +13,36 @@ struct node
 class AVLTree
 {
 public:
-	AVLTree();
+	AVLTree()=default;
+	AVLTree(const AVLTree&)=delete;
+	AVLTree &operator=(const AVLTree&)=delete;
+	AVLTree(AVLTree &&)=default;
+	AVLTree &operator=(AVLTree &&)=default;
+	~AVLTree() = default;
 
-	const node *insertNode(uint64_t data);
-	const node *deleteNode(uint64_t data);
-	
+	bool insertNode(uint64_t data);
+	bool  deleteNode(uint64_t data);
+	node *find(uint64_t data);
+	const node *rootNode()const { return root; }
+private:
+	node *findNode(node *r, uint64_t data);
+	bool insertNode(node *&r,node *p, uint64_t data);
+	bool  deleteNode(node *&r,uint64_t data, uint32_t &bf);
+	node *left_rotate(node *node);
+	node *right_rotate(node *node);
+	node *right_left_rotate(node *node);
+	node *left_right_rotate(node *node);
+	node *rebalance(node *node);
+	node *stepDeleteLeft(node *target, node *&surrogate, node *&prev, uint32_t &bf);
+	node *stepDeleteRight(node *target, node *&surrogate, node *&prev, uint32_t &bf);
 private:
 	node	*root{nullptr};
 };
 
-struct node {
-    uint64_t data;
-    uint32_t bf;
-	struct node *left;
-    struct node *right;
-	struct node *front;
-    struct node *back;
-	
-	uint32_t bf1() {
-		return ((bf1 & 0x00000003) - 1) - 1;
-	}
-	
-	void bf1(uint32_t bf) {
-		ASSERT( -1 <= bf && bf <= 1);
-		bf |= ((bf+1) & 0x00000003);
-	}
-	
-	uint32_t bf2() {
-		ASSERT( -1 <= bf && bf <= 1);
-		return ((bf1 & 0x0000000C)>>2) - 1;
-	}
-	
-	void bf2(uint32_t bf) {
-		ASSERT( -1 <= bf && bf <= 1);
-		bf |= (((bf+1) & 0x00000003) << 2);
-	}	
-};
-
-uint32_t height(struct node *r)
+inline
+int32_t height(struct node *r)
 {
-	uint32_t h = 0;
+	int32_t h = 0;
 	if(r)
 	{
 		h = std::max(height(r->left), height(r->right)) + 1;
@@ -59,9 +50,10 @@ uint32_t height(struct node *r)
 	return h;
 }
 
-uint32_t BF(struct node *r)
+inline
+int32_t BF(struct node *r)
 {
-	uint32_t bf = 0;
+	int32_t bf = 0;
 	if(r)
 	{
 		bf = height(r->right) - height(r->left);
@@ -69,6 +61,7 @@ uint32_t BF(struct node *r)
 	return bf;
 }
 
+inline
 void checkTree(struct node *r)
 {
 	if(r)
@@ -81,11 +74,11 @@ void checkTree(struct node *r)
 		{
 			checkTree(r->right);
 		}
-		ASSERT( (r->bf1()) == BF(r) );
+		assert( (r->bf) == BF(r) );
 	}
 }
 
-
+#if 0
 struct node * deleteNode(struct node *p,int data)
 {
 	if(p->left == NULL && p->right == NULL){
@@ -233,3 +226,4 @@ int calheight(struct node *p)
 		return 0;
 
 }
+#endif // 0

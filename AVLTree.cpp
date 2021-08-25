@@ -1,48 +1,98 @@
 #include "AVLTree.h"
+#include <algorithm>
+#include <iostream>
 
 using namespace std;
 
+bool AVLTree::insertNode(uint64_t data)
+{
+	auto success = false;
+	if(root)
+	{
+		success = insertNode(root, nullptr, data);
+	}
+	else
+	{
+		root = new node{};
+		if( root )
+		{
+			root->data = data;
+			success = true;
+		}
+	}
+	return success;
+}
+
+node *AVLTree::find(uint64_t data)
+{
+	return findNode(root, data);
+}
+
+node *AVLTree::findNode(node *r, uint64_t data)
+{
+	if(r)
+	{
+		if( data < r->data )
+		{
+			r = findNode(r->left,data);
+		}
+		else if( r->data < data )
+		{
+			r = findNode(r->right, data);
+		}
+	}
+	return r;
+}
+
+bool AVLTree::deleteNode(uint64_t data)
+{
+	uint32_t bf = 0;
+	return deleteNode(root, data, bf);
+}
+
+
 /*         left rotate
  *
- *    (P)                (Q)
- *   /   \              /   \
- *  1    (Q)    ==>   (P)    3
- *      /   \        /   \
- *     2     3      1     2
- *
+ *    1              2
+ *     \            / \
+ *      2    ==>   1   3
+ *       \ 
+ *        3
  */
-void AVLTree::left_rotate(node *&node)
+node *AVLTree::left_rotate(node *p)
 {
-	node *p = node;
+	// node *p = n;
 	node *q = p->right;
 
 	p->right = q->left;
 	q->left = p;
-	node = q;
+	// n = q;
 
 	p->bf -= 1 + max(0, q->bf);
 	q->bf -= 1 - min(0, p->bf);
+	return q;
 }
 
-/*           right rotate
+/*               right rotate
  *  
- *       (P)                (Q)
- *      /   \              /   \
- *    (Q)    3    ==>     1    (P)  
- *   /   \                    /   \
- *  1     2                  2     3
- *
+ *          3                2
+ *         /                / \
+ *        2       ==>      1   3  
+ *       /
+ *      1
+ *    
  */
-void AVLTree::right_rotate(node *&node)
+node *AVLTree::right_rotate(node *p)
 {
-	node *p = node;
+//	node *p = n;
 	node *q = p->left;
 	p->left = q->right;
 	q->right = p;
-	node = q;
+	// n = q;
 
 	p->bf += 1 - min(0, q->bf);
 	q->bf += 1 + max(0, p->bf);
+	return q;
 }
 
 
@@ -59,10 +109,11 @@ void AVLTree::right_rotate(node *&node)
  *  note that left-right rotate could be implemented as a call to 
  *  left_rotate(Q) followed by a call to right_rotate(P).
  */
-void AVLTree::left_right_rotate(node *&node)
+node *AVLTree::left_right_rotate(node *p)
 {
-	node *p = node;
-	node *q = node->left;
+	//node *p = n;
+	//node *q = n->left;
+	node *q = p->left;
 	node *r = q->right;
 
 	q->right = r->left;
@@ -70,11 +121,12 @@ void AVLTree::left_right_rotate(node *&node)
 	r->right = p;
 	r->left = q;
 
-	node = r;
+	// n = r;
 
 	q->bf -= 1 + max(0, r->bf);
 	p->bf += 1 - min(min(0, r->bf) - 1, r->bf + q->bf);
 	r->bf += max(0, p->bf) + min(0, q->bf);
+	return r;
 }
 
 /*              right-left rotate
@@ -90,10 +142,11 @@ void AVLTree::left_right_rotate(node *&node)
  *  note that right-left rotate could be implemented as a call to 
  *  right_rotate(Q) followed by a call to left_rotate(P).
  */
-void AVLTree::right_left_rotate(node *&node)
+node *AVLTree::right_left_rotate(node *p)
 {
-	node *p = node;
-	node *q = node->right;
+	// node *p = n;
+	// node *q = n->right;
+	node *q = p->right;
 	node *r = q->left;
 
 	q->left = r->right;
@@ -101,33 +154,23 @@ void AVLTree::right_left_rotate(node *&node)
 	r->left = p;
 	r->right = q;
 
-	node = r;
+	// n = r;
 
 	q->bf += 1 - min(0, r->bf);
 	p->bf -= 1 + max(max(0, r->bf) + 1, r->bf + q->bf);
 	r->bf += max(0, q->bf) + min(0, p->bf);
+	return r;
 }
 
 
-struct node*
-AVLTree::rebalance(struct node *&r)
+node *
+AVLTree::rebalance(node *r)
 {
 	if(r)
 	{
 		if(r->bf == -2 )
 		{
-			if( r->right && r->right->bf == 1 )
-			{
-				r = right_left_rotate(r);
-			}
-			else
-			{
-				r = left_rotate(r);
-			}
-		}
-		else if( r->bf == 2 )
-		{
-			if( r->left->bf == -1 )
+			if( r->left->bf == 1 )
 			{
 				r = left_right_rotate(r);
 			}
@@ -136,18 +179,31 @@ AVLTree::rebalance(struct node *&r)
 				r = right_rotate(r);
 			}
 		}
+		else if( r->bf == 2 )
+		{
+			if( r->right && r->right->bf == -1 )
+			{
+				r = right_left_rotate(r);
+			}
+			else
+			{
+				r = left_rotate(r);
+			}
+		}
 	}
+	return r;
 }
 
 
 bool
-AVLTree::insertNode(node *&r,node *p, int data)
+AVLTree::insertNode(node *&r,node *p, uint64_t data)
 {
 	auto success = false;
+	auto before = 0u;
 	if( r )
 	{
-		auto before = r->bf;
-		if( r->data < data )
+		before = r->bf;
+		if( data < r->data )
 		{
 			if( r->left )
 			{
@@ -159,11 +215,12 @@ AVLTree::insertNode(node *&r,node *p, int data)
 				if( r->left )
 				{
 					r->left->data = data;
+					r->bf--;
 					success = true;
 				}
 			}
 		}
-		else if( data < r->data )
+		else if( r->data < data )
 		{
 			if( r->right )
 			{
@@ -175,6 +232,7 @@ AVLTree::insertNode(node *&r,node *p, int data)
 				if( r->right )
 				{
 					r->right->data = data;
+					r->bf++;
 					success = true;
 				}
 			}
@@ -182,12 +240,12 @@ AVLTree::insertNode(node *&r,node *p, int data)
 	}
 	if(success)
 	{
-		if (parent && r->bf && before == 0)
+		if (p && r->bf && before == 0)
 		{
-			parent->bf += (parent->left == r ? (-1) : (+1));
+			p->bf += (p->left == r ? (-1) : (+1));
 		}
 		
-		rebalance(r);
+		r = rebalance(r);
 	}
 	return success;
 }
@@ -206,28 +264,81 @@ AVLTree::stepDeleteLeft(node *target, node *&surrogate, node *&prev, uint32_t &b
 	}
 	else
 	{
-		rm = stepDelegateLeft(target, surrogate->left, surrogate, bf );
+		rm = stepDeleteLeft(target, surrogate->left, surrogate, bf );
 	}
 	
 	if( bf )
 	{
-		if( prev == 
+		if( prev == target )
+		{
+			prev->bf--;
+		}
+		else
+		{
+			prev->bf++;
+		}
+
+		prev = rebalance(prev);
+
+		if( prev->bf == 1 || prev->bf == -1 )
+		{
+			bf = 0;
+		}
 	}
+	return rm;
+}
+
+node *
+AVLTree::stepDeleteRight(node *target, node *&surrogate, node *&prev, uint32_t &bf)
+{
+	node *rm = nullptr;
+	
+	if( ! surrogate->right )
+	{
+		rm = surrogate;
+		std::swap(target->data, rm->data);
+		surrogate = surrogate->left;
+		bf = 1;
+	}
+	else
+	{
+		rm = stepDeleteRight(target, surrogate->right, surrogate, bf );
+	}
+	
+	if( bf )
+	{
+		if( prev == target )
+		{
+			prev->bf++;
+		}
+		else
+		{
+			prev->bf--;
+		}
+
+		prev = rebalance(prev);
+
+		if( prev->bf == 1 || prev->bf == -1 )
+		{
+			bf = 0;
+		}
+	}
+	return rm;
 }
 
 bool
-AVLTree::deleteNode(node *&r,int data, uint32_t &bf)
+AVLTree::deleteNode(node *&r,uint64_t data, uint32_t &bf)
 {
 	auto success = false;
 	auto direction = 0;
 	if(r)
 	{
-		if( r->data < data )
+		if( data < r->data )
 		{
 			direction = 1;
 			success = deleteNode(r->left, data,bf);
 		}
-		else if( data < r->data )
+		else if( r->data < data )
 		{
 			direction = -1;
 			success = deleteNode(r->right, data,bf);
@@ -241,13 +352,13 @@ AVLTree::deleteNode(node *&r,int data, uint32_t &bf)
 			{
 				old = r;
 				r = r->right;
-				*bf = 1;
+				bf = 1;
 			}
 			else if ( ! r->right )
 			{
 				old =r;
 				r = r->left;
-				*bf = 1;
+				bf = 1;
 			}
 			else
 			{
@@ -275,18 +386,18 @@ AVLTree::deleteNode(node *&r,int data, uint32_t &bf)
 				r->bf += direction;
 			}
 			
-			rebalance(r);
+			r = rebalance(r);
 			
 			if( r->bf )
 			{
-				*bf = 0;
+				bf = 0;
 			}
 		}
 	}
 	return success;
 }
 
-
+# if 0
 struct node*
 AVLTree::insertNode(node *r,node *parent, int data)
 {
@@ -355,3 +466,4 @@ AVLTree::insertNode(node *r,node *parent, int data)
 	}
 	return r;
 }
+#endif // 0

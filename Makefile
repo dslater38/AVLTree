@@ -15,6 +15,7 @@ CXXSTD?=-std:c++17
 OUTOPT?=-Fo:
 EXEOPT?=-out:
 CXXFLAGS+=-EHsc
+LDEBUG?=-DEBUG:full
 
 else
 
@@ -36,6 +37,7 @@ CXXFLAGS:=$(CXXFLAGS) $(COPTS) $(CXXSTD)
 
 ifdef DEBUG
 CXXFLAGS+=$(CDEBUG)
+LFLAGS+=$(LDEBUG)
 else
 CXXFLAGS+=$(CRELEASE)
 endif

@@ -88,6 +88,7 @@ public:
 	bool insertNode(Data data);
 	bool  deleteNode(Data data);
 	node *find(Data data);
+	node *lowerBound(Data data);
 	const node *rootNode()const { return root; }
 private:
     node *&Left(node *n) { return traits::Left(n); }
@@ -98,6 +99,7 @@ private:
     void bf(node *n, int32_t b)const { traits::bf(n, b); }
 private:
 	node *findNode(node *r, const Data &data);
+	node *lowerBound(node *r, const Data &data);
 	bool insertNode(node *&r,node *p, Data data);
 	bool  deleteNode(node *&r,Data data, int32_t &bf);
 	node *left_rotate(node *node);
@@ -131,6 +133,29 @@ Node *AVLTreeT<Node,traits>::findNode(Node *r, const Data &data)
 	return r;
 }
 
+template<typename Node, typename traits>
+inline
+Node *AVLTreeT<Node,traits>::lowerBound(Node *r, const Data &data)
+{
+	if(r)
+	{
+		if( traits::lt(data, traits::data(r)) )
+		{
+			auto tmp = lowerBound(Left(r),data);
+			if(tmp &&
+				traits::lt(data, traits::data(tmp)) ||
+				!traits::lt(traits::data(tmp), data) )
+			{
+				r = tmp;
+			}
+		}
+		else if( traits::lt(traits::data(r), data) )
+		{
+			r = lowerBound(Right(r), data);
+		}
+	}
+	return r;
+}
 
 template<typename Node, typename traits>
 inline
@@ -157,6 +182,12 @@ Node *AVLTreeT<Node,traits>::find(Data data)
 	return findNode(root, data);
 }
 
+template<typename Node, typename traits>
+inline
+Node *AVLTreeT<Node,traits>::lowerBound(Data data)
+{
+	return lowerBound(root, data);
+}
 
 /*         left rotate
  *

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <sstream>
 
 template<typename Node, typename Data=uint64_t > 
 struct DefaultNodeTraits
@@ -175,9 +176,9 @@ Node *AVLTreeT<Node,traits>::left_rotate(Node *p)
 	// n = q;
 
 	// bf(p) -= 1 + max(0, bf(q));
-	bf(p, bf(p) - 1 + max(0, bf(q)) );
+	bf(p, bf(p) - (1 + max(0, bf(q))) );
 	// bf(q) -= 1 - min(0, bf(p));
-	bf(q, bf(q) - 1 - min(0, bf(p)) );
+	bf(q, bf(q) - (1 - min(0, bf(p))) );
 	return q;
 }
 
@@ -199,9 +200,9 @@ Node *AVLTreeT<Node,traits>::right_rotate(Node *p)
 	Right(q) = p;
 
 	// bf(p) += 1 - min(0, bf(q));
-	bf(p, bf(p) + 1 - min(0, bf(q)));
+	bf(p, bf(p) + (1 - min(0, bf(q))));
 	// bf(q) += 1 + max(0, bf(p));
-	bf(q, bf(q) + 1 + max(0, bf(p)));
+	bf(q, bf(q) + (1 + max(0, bf(p))));
 	return q;
 }
 
@@ -232,11 +233,11 @@ Node *AVLTreeT<Node,traits>::left_right_rotate(Node *p)
 	Left(r) = q;
 
 	// bf(q) -= 1 + max(0, bf(r));
-	bf(q, bf(q) - 1 + max(0, bf(r)));
+	bf(q, bf(q) - (1 + max(0, bf(r))));
 	// bf(p) += 1 - min(min(0, bf(r)) - 1, bf(r) + bf(q));
-	bf(p, bf(p) + 1 - min(min(0, bf(r)) - 1, bf(r) + bf(q)));
+	bf(p, bf(p) + (1 - min(min(0, bf(r)) - 1, bf(r) + bf(q))));
 	// bf(r) += max(0, bf(p)) + min(0, bf(q));
-	bf(r, bf(r) + max(0, bf(p)) + min(0, bf(q)));
+	bf(r, bf(r) + (max(0, bf(p)) + min(0, bf(q))));
 	return r;
 }
 
@@ -266,11 +267,11 @@ Node *AVLTreeT<Node,traits>::right_left_rotate(Node *p)
 	Right(r) = q;
 
 	// bf(q) += 1 - min(0, bf(r));
-	bf(q, bf(q) + 1 - min(0, bf(r)));
+	bf(q, bf(q) + (1 - min(0, bf(r))));
 	// bf(p) -= 1 + max(max(0, bf(r)) + 1, bf(r) + bf(q));
-	bf(p, bf(p) - 1 + max(max(0, bf(r)) + 1, bf(r) + bf(q)));
+	bf(p, bf(p) - (1 + max(max(0, bf(r)) + 1, bf(r) + bf(q))));
 	// bf(r) += max(0, bf(q)) + min(0, bf(p));
-	bf(r, bf(r) + max(0, bf(q)) + min(0, bf(p)));
+	bf(r, bf(r) + (max(0, bf(q)) + min(0, bf(p))));
 	return r;
 }
 
@@ -475,7 +476,7 @@ AVLTreeT<Node,traits>::deleteNode(node *&r,AVLTreeT<Node,traits>::Data data, int
 			}
 			else
 			{
-				if( bf(r > 0 )
+				if( bf(r) > 0 )
 				{
 					old = stepDeleteLeft(r, Right(r), r, bf);
 				}
@@ -584,15 +585,15 @@ inline void printTree(const NodePtr root, std::shared_ptr<Trunk> prev, bool isLe
     printTree<NodePtr, traits>(traits::Right(root), trunk, true);
  
     if (!prev) {
-        trunk->str = "---";
+        trunk->str = "───";
     }
     else if (isLeft)
     {
-        trunk->str = ".---";
-        prev_str = "   |";
+        trunk->str = "╭───";
+        prev_str = "    │";
     }
     else {
-        trunk->str = "`---";
+        trunk->str = "╰───";
         prev->str = prev_str;
     }
  
@@ -615,13 +616,67 @@ inline void printTree(const NodePtr root, std::shared_ptr<Trunk> prev, bool isLe
     if (prev) {
         prev->str = prev_str;
     }
-    trunk->str = "   |";
+    trunk->str = "    │";
  
     printTree<NodePtr, traits>(traits::Left(root), trunk, false);
 }
 
+template<typename NodePtr, typename traits>
+inline std::string toStr(const NodePtr n)
+{
+	std::stringstream ss{};
+	if(n)
+	{
+		auto bf = BF<NodePtr, traits>(n);
+		
+		ss << "\"" << n->data;
+		auto str = std::string{""};
+		while(bf>0)
+		{
+			ss << '+';
+			--bf;
+		}
+		while(bf<0)
+		{
+			ss << '-';
+			++bf;
+		}
+		ss << "\"";
+	}
+	return ss.str();
+}
 
+template<typename NodePtr, typename traits>
+inline void dottyTree(const NodePtr n)
+{
+	if(n && (traits::Left(n) || traits::Right(n)) )
+	{
+		auto s = toStr<NodePtr, traits>(n);
+		
+		if(traits::Left(n))
+		{
+			std::cout << '\t' << s << " -> {";
+			std::cout << toStr<NodePtr, traits>(traits::Left(n)) << " [color=red] ";
+			std::cout << "} [color=red arrowhead=vee]\n";
+		}
+		if(traits::Right(n))
+		{
+			std::cout << '\t' << s << " -> {";
+			std::cout << toStr<NodePtr, traits>(traits::Right(n)) << " [color=blue]";
+			std::cout << "} [color=blue arrowhead=vee]\n";
+		}
+		dottyTree<NodePtr,traits>(traits::Left(n));
+		dottyTree<NodePtr,traits>(traits::Right(n));
+	}
+}
 
+template<typename NodePtr, typename traits>
+inline void dottyTree(const AVLTreeT<NodePtr, traits> &tree)
+{
+	cout << "digraph {\n";
+	dottyTree<const node2 *, DefaultNodeTraits<node2>>(tree.rootNode());
+	cout << "}" << endl;
+}
 
 #endif // AVLTREET_H_INCLUDED
 

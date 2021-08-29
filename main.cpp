@@ -3,7 +3,11 @@
 #include "AVLTreeT.h"
 #include <cstdlib>
 #include <string>
-
+#ifdef WIN32
+#include <windows.h>
+#endif
+#include <limits>
+#include <cerrno>
 // #include "AVLTreeT.h"
 
 using namespace std;
@@ -20,27 +24,56 @@ struct node2
 };
 
 auto foo = AVLTreeT<node2>{};
-
+static auto dottyOutput = false;
 int main(int argc, char **argv)
 {
     if(argc > 1)
     {
+        auto i = 1;
+        if( *(argv[1]) == '-' && *(argv[1]+1) == 'd' )
+        {
+            dottyOutput = true;
+        }
+#ifdef WIN32
+    SetConsoleOutputCP(65001);
+#endif        
         AVLTreeT<node2> tree{};
         for( auto i=1; i<argc; ++i )
         {
             char *strend = nullptr;
-            uint64_t data = std::strtoull(argv[i], &strend, 10);
-            tree.insertNode(data);
-            // checkTree(tree.rootNode());
+            const char *str = argv[i];
+            errno = 0;
+            uint64_t data = std::strtoull(str, &strend, 10);
+            if( errno == 0 )
+            {
+                tree.insertNode(data);
+            }
+            else
+            {
+                std::cerr << "Error: bad integer: " << str << std::strerror(errno) << "\n";
+            }
+            // if( data < std::numeric_limits<uint64_t>::max() || errno == 0)
+            // {
+            //     if(*str != '\0' && strend && *strend=='\0' )
+            //     {
+                    
+            //     }
+            //     else
+            //     {
+
+            //     }
+            // }
+            
         }
 
-        auto *n= tree.find(2);
-        n = tree.find(1);
-        n = tree.find(45);
-        ((void)n);
-
-        printTree<const node2 *, DefaultNodeTraits<node2>>(tree.rootNode(), std::shared_ptr<Trunk>{}, false);
-        // printTree(tree);
+        if( dottyOutput )
+        {
+            dottyTree(tree);
+        }
+        else
+        {
+            printTree<const node2 *, DefaultNodeTraits<node2>>(tree.rootNode(), std::shared_ptr<Trunk>{}, false);
+        }        
     }
     return 0;
 }

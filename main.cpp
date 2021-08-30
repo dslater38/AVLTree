@@ -1,127 +1,104 @@
 #include <iostream>
-#include "AVLTree.h"
+// #include "AVLTree.h"
+#include "AVLTreeT.h"
 #include <cstdlib>
 #include <string>
+#ifdef WIN32
+#include <windows.h>
+#endif
+#include <limits>
+#include <cerrno>
+// #include "AVLTreeT.h"
 
 using namespace std;
 
-void walkTree(const node *node, int depth = 0);
-void printTree(const AVLTree &tree);
+// void walkTree(const NodePtr &node, int depth = 0);
+// void printTree(const AVLTree &tree);
 
+struct node2
+{
+    uint64_t data{0};
+    int32_t bf{0};
+	node2 *left{nullptr};
+    node2 *right{nullptr};
+};
+
+static void runTest();
+
+auto foo = AVLTreeT<node2>{};
+static auto dottyOutput = false;
 int main(int argc, char **argv)
 {
     if(argc > 1)
     {
-        AVLTree tree{};
+        auto i = 1;
+        if( *(argv[1]) == '-' && *(argv[1]+1) == 'd' )
+        {
+            dottyOutput = true;
+        }
+#ifdef WIN32
+    SetConsoleOutputCP(65001);
+#endif        
+        AVLTreeT<node2> tree{};
         for( auto i=1; i<argc; ++i )
         {
             char *strend = nullptr;
-            uint64_t data = std::strtoull(argv[i], &strend, 10);
-            tree.insertNode(data);
+            const char *str = argv[i];
+            errno = 0;
+            uint64_t data = std::strtoull(str, &strend, 10);
+            if( errno == 0 )
+            {
+                tree.insertNode(data);
+            }
+            else
+            {
+                std::cerr << "Error: bad integer: " << str << std::strerror(errno) << "\n";
+            }            
         }
 
-        auto *n= tree.find(2);
-        n = tree.find(1);
-        n = tree.find(45);
-        ((void)n);
-        printTree(tree);
+        if( dottyOutput )
+        {
+            dottyTree(tree);
+        }
+        else
+        {
+            printTree<const node2 *, DefaultNodeTraits<node2>>(tree.rootNode(), std::shared_ptr<Trunk>{}, false);
+        }        
+    }
+    else
+    {
+        runTest();
     }
     return 0;
 }
 
-void walkTree(const node *node, int depth)
+static void lowerBound( AVLTreeT<node2> &t, uint64_t v)
 {
-    if(node)
+    const auto *n = t.lowerBound(v);
+    if(n)
     {
-        if( node ->left )
-        {
-            walkTree(node->left, depth+1);
-        }
-        for(auto i=0; i<depth; ++i)
-        {
-            std::cout << "|--";
-        }
-        std::cout << node->data << '\n';
-        if( node ->right )
-        {
-            walkTree(node->right, depth+1);
-        }
+        cout << "Lower Bound: " << v << " == " << n->data << '\n';
+    }
+    else
+    {
+        cout << "Lower Bound: " << v << " Failed\n";
     }
 }
 
-
-
-static int count__ = 0;
-struct Trunk
+static void runTest()
 {
-    shared_ptr<Trunk> prev{};
-    string str{};
-    Trunk()
+    AVLTreeT<node2> tree{};
+    for( auto i=0ull; i<=50ull; ++i)
     {
-        ++count__;
+        tree.insertNode(i*2);
     }
-    ~Trunk()
-    {
-        --count__;
-    }
-    Trunk(shared_ptr<Trunk> prev, string str)
-    {
-        this->prev = prev;
-        this->str = str;
-        ++count__;
-    }
-};
 
+    lowerBound(tree, 45);
+    lowerBound(tree, 44);
+    lowerBound(tree, 46);
 
-// Helper function to print branches of the binary tree
-void showTrunks(const Trunk *p)
-{
-    if (p == nullptr) {
-        return;
-    }
- 
-    showTrunks(p->prev.get());
-    cout << p->str;
-}
+    lowerBound(tree, 3);
 
-// Recursive function to print a binary tree.
-// It uses the inorder traversal.
-void printTree(const node* root, shared_ptr<Trunk> prev, bool isLeft)
-{
-    if (root == nullptr) {
-        return;
-    }
- 
-    string prev_str = "    ";
-    auto trunk = make_shared<Trunk>(prev, prev_str);
- 
-    printTree(root->right, trunk, true);
- 
-    if (!prev) {
-        trunk->str = "---";
-    }
-    else if (isLeft)
-    {
-        trunk->str = ".---";
-        prev_str = "   |";
-    }
-    else {
-        trunk->str = "`---";
-        prev->str = prev_str;
-    }
- 
-    showTrunks(trunk.get());
-    cout << root->data << endl;
- 
-    if (prev) {
-        prev->str = prev_str;
-    }
-    trunk->str = "   |";
- 
-    printTree(root->left, trunk, false);
-}
-
-void printTree(const AVLTree &tree)
-{
-	printTree(tree.rootNode(), unique_ptr<Trunk>{}, false);
+    lowerBound(tree, 99);
+    
 }

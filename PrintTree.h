@@ -2,8 +2,6 @@
 #define PRINTTREE_H_INCLUDED
 #pragma once
 
-#include "AVLTreeT.h"
-
 struct Trunk
 {
     std::shared_ptr<Trunk> prev{};
@@ -148,12 +146,5 @@ inline void dottyTree(const NodePtr n)
 	}
 }
 
-template<typename NodePtr, typename traits>
-inline void dottyTree(const AVLTreeT<NodePtr, traits> &tree)
-{
-	std::cout << "digraph {\n";
-	dottyTree<const NodePtr *, traits>(tree.rootNode());
-	std::cout << "}" << std::endl;
-}
 
 #endif // PRINTTREE_H_INCLUDED

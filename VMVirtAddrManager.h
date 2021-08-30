@@ -1,6 +1,31 @@
 #ifndef AVL_VM_TREE_H_INCLUDED
 #define AVL_VM_TREE_H_INCLUDED
 #include "AVLTreeT.h"
+#include <iostream>
+
+struct VirtBlock
+{
+    void *  address{nullptr};
+    size_t  size{0u};
+};
+
+namespace std 
+{
+    inline
+    ostream &operator<<(ostream &os, const VirtBlock &b)
+    {
+        const auto flags = os.flags();
+        if( flags & std::cout.boolalpha )
+        {
+            os << "{" << b.size << ",0x" << b.address << '}';
+        }
+        else
+        {
+            os << "{0x" << b.address << "," << b.size << '}';
+        }
+        return os;
+    }
+}
 
 struct VMNode
 {
@@ -8,17 +33,15 @@ struct VMNode
     VMNode  *south{nullptr};
     VMNode  *east{nullptr};
     VMNode  *west{nullptr};
-    struct {
-        void *  address{nullptr};
-        size_t  size{0u};
-    }data{};
+
+    VirtBlock data{};
     int8_t    bf_ew{0};
     int8_t    bf_ns{0};
 };
 
 struct VMNodeTraitsEW
 {
-    using Datatype = VMNode::data;
+    using Datatype = VirtBlock;
     using Node = VMNode;
 
    static bool lt(const Datatype &a, const Datatype &b)
@@ -56,7 +79,7 @@ struct VMNodeTraitsEW
         return n->west;
     }
 
-    static int32_t bf(Node *n)
+    static int32_t bf(const Node *n)
     {
         return n->bf_ew;
     }
@@ -75,12 +98,11 @@ struct VMNodeTraitsEW
     {
         return n->data;
     }
-
-}
+};
 
 struct VMNodeTraitsNS
 {
-    using Datatype = VMNode::data;
+    using Datatype = VirtBlock;
     using Node = VMNode;
 
    static bool lt(const Datatype &a, const Datatype &b)
@@ -129,7 +151,7 @@ struct VMNodeTraitsNS
         return n->south;
     }
 
-    static int32_t bf(Node *n)
+    static int32_t bf(const Node *n)
     {
         return n->bf_ns;
     }
@@ -148,7 +170,7 @@ struct VMNodeTraitsNS
     {
         return n->data;
     }
-}
+};
 
 class VMVirtAddrManager
 {
@@ -156,14 +178,16 @@ public:
     using AddressTree = AVLTreeT<VMNode, VMNodeTraitsEW>;
     using BlockSizeTree = AVLTreeT<VMNode, VMNodeTraitsNS>;
     VMVirtAddrManager() = default;
-    VMVirtAddrManager(const VMVirtAddrManager &&) = default;
-    VMVirtAddrManager & operator=(const VMVirtAddrManager &&) = default;
+    VMVirtAddrManager(VMVirtAddrManager &&) = default;
+    VMVirtAddrManager & operator=(VMVirtAddrManager &&) = default;
     VMVirtAddrManager(const VMVirtAddrManager &) = delete;
     VMVirtAddrManager & operator=(const VMVirtAddrManager &) = delete;
     ~VMVirtAddrManager() = default;
-private:
+
+    bool addBlock(const VirtBlock &block);
+
     AddressTree     addressTree{};
     BlockSizeTree   blockSizeTree{};
-}
+};
 
 #endif // AVL_VM_TREE_H_INCLUDED

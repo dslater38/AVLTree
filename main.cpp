@@ -1,14 +1,15 @@
-#include <iostream>
-// #include "AVLTree.h"
-#include "AVLTreeT.h"
-#include <cstdlib>
-#include <string>
 #ifdef WIN32
 #include <windows.h>
 #endif
+#include <iostream>
+#include <iomanip>
+#include <cstdlib>
+#include <string>
 #include <limits>
 #include <cerrno>
-// #include "AVLTreeT.h"
+#include "AVLTreeT.h"
+#include "PrintTree.h"
+#include "VMVirtAddrManager.h"
 
 using namespace std;
 
@@ -24,6 +25,7 @@ struct node2
 };
 
 static void runTest();
+static void test2();
 
 auto foo = AVLTreeT<node2>{};
 static auto dottyOutput = false;
@@ -67,6 +69,7 @@ int main(int argc, char **argv)
     }
     else
     {
+        test2();
         runTest();
     }
     return 0;
@@ -101,4 +104,37 @@ static void runTest()
 
     lowerBound(tree, 99);
     
+}
+
+static void test2()
+{
+    VMVirtAddrManager mgr{};
+    VirtBlock blocks[] = {
+        VirtBlock{ reinterpret_cast<void *>(0x0000000000001000), 1ull },
+        VirtBlock{ reinterpret_cast<void *>(0x0000000000002000), 64ull },
+        VirtBlock{ reinterpret_cast<void *>(0x000000000C002000), 0x1000ull },
+        VirtBlock{ reinterpret_cast<void *>(0x000000000C00A000), 0x3ull },
+        VirtBlock{ reinterpret_cast<void *>(0x000000000C01A000), 0x128ull }
+    };
+    const auto count = sizeof(blocks)/sizeof(blocks[0]);
+
+    for( auto i=0; i<count; ++i)
+    {
+        mgr.addBlock(blocks[i]);    
+    }
+
+
+    std::cout << "digraph {\n";
+    std::cout << std::resetiosflags( std::cout.boolalpha );
+    dottyTree<const VMNode *, VMNodeTraitsEW>(mgr.addressTree.rootNode());
+    std::cout << std::setiosflags( std::cout.boolalpha );
+    dottyTree<const VMNode *, VMNodeTraitsNS>(mgr.blockSizeTree.rootNode());
+    std::cout << "}" << std::endl;
+
+    // printTree<const VMNode *, VMNodeTraitsEW>(mgr.addressTree.rootNode(), std::shared_ptr<Trunk>{}, false);
+    // cout << "======================\n"; 
+    // printTree<const VMNode *, VMNodeTraitsNS>(mgr.blockSizeTree.rootNode(), std::shared_ptr<Trunk>{}, false);
+
+    return;
+
 }

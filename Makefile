@@ -42,7 +42,7 @@ else
 CXXFLAGS+=$(CRELEASE)
 endif
 
-OBJECTS=AVLTree.$(OEXT) main.$(OEXT)
+OBJECTS=AVLTree.$(OEXT) main.$(OEXT) VMVirtAddrManager.$(OEXT)
 
 
 $(TARGET) : $(OBJECTS)
@@ -54,8 +54,8 @@ clean:
 	rm -f $(OBJECTS) $(TARGET)
 
 AVLTree.$(OEXT) : AVLTree.cpp AVLTree.h
-main.$(OEXT) : main.cpp AVLTreeT.h
-
+main.$(OEXT) : main.cpp AVLTreeT.h PrintTree.h
+VMVirtAddrManager.$(OEXT) : VMVirtAddrManager.cpp VMVirtAddrManager.h AVLTreeT.h
 
 %.$(OEXT) : %.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< $(OUTOPT) $@

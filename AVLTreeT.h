@@ -87,6 +87,9 @@ public:
 
 	bool insertNode(Data data);
 	bool  deleteNode(Data data);
+
+	bool insertNode(node *data);
+
 	node *find(Data data);
 	node *lowerBound(Data data);
 	const node *rootNode()const { return root; }
@@ -100,8 +103,9 @@ private:
 private:
 	node *findNode(node *r, const Data &data);
 	node *lowerBound(node *r, const Data &data);
-	bool insertNode(node *&r,node *p, Data data);
+	bool insertNode(node *&r,node *p, node *pData);
 	bool  deleteNode(node *&r,Data data, int32_t &bf);
+	node *removeNode(node *&r,Data data, int32_t &bf);
 	node *left_rotate(node *node);
 	node *right_rotate(node *node);
 	node *right_left_rotate(node *node);
@@ -143,8 +147,8 @@ Node *AVLTreeT<Node,traits>::lowerBound(Node *r, const Data &data)
 		{
 			auto tmp = lowerBound(Left(r),data);
 			if(tmp &&
-				traits::lt(data, traits::data(tmp)) ||
-				!traits::lt(traits::data(tmp), data) )
+				(traits::lt(data, traits::data(tmp)) ||
+				!traits::lt(traits::data(tmp), data)) )
 			{
 				r = tmp;
 			}
@@ -161,19 +165,53 @@ template<typename Node, typename traits>
 inline
 bool AVLTreeT<Node,traits>::insertNode(Data data)
 {
-
-	auto success = false;
-	if(root)
+	auto *node = traits::createNode(data);
+	auto success = insertNode(node);
+	if(success)
 	{
-		success = insertNode(root, nullptr, data);
-	}
-	else
-	{
-		root = traits::createNode(data);
-    	success = true;
+		if(root)
+		{
+			success = insertNode(root, nullptr, node);
+		}
+		else
+		{
+			root = node;
+		}
 	}
 	return success;
 }
+
+template<typename Node, typename traits>
+inline
+bool AVLTreeT<Node,traits>::insertNode(Node *pNewNode)
+{
+	auto success = (pNewNode != nullptr);
+	if(success)
+	{
+		if(root)
+		{
+			success = insertNode(root, nullptr, pNewNode);
+		}
+		else
+		{
+			root = pNewNode;
+		}
+	}
+	return success;
+}
+template<typename Node, typename traits>
+inline
+bool AVLTreeT<Node,traits>::deleteNode(Data data)
+{
+	auto *node = removeNode(data);
+	auto success = (node != nullptr);
+	if(success)
+	{
+		delete node;
+	}
+	return success;
+}
+
 
 template<typename Node, typename traits>
 inline
@@ -205,12 +243,10 @@ Node *AVLTreeT<Node,traits>::left_rotate(Node *p)
 
 	Right(p) = Left(q);
 	Left(q) = p;
-	// n = q;
 
-	// bf(p) -= 1 + max(0, bf(q));
-	bf(p, bf(p) - (1 + std::max(0, bf(q))) );
-	// bf(q) -= 1 - min(0, bf(p));
-	bf(q, bf(q) - (1 - std::min(0, bf(p))) );
+	
+	bf(p, bf(p) - (1 + std::max(0, bf(q))) ); // bf(p) -= 1 + max(0, bf(q));
+	bf(q, bf(q) - (1 - std::min(0, bf(p))) ); // bf(q) -= 1 - min(0, bf(p));
 	return q;
 }
 
@@ -231,10 +267,9 @@ Node *AVLTreeT<Node,traits>::right_rotate(Node *p)
 	Left(p) = Right(q);
 	Right(q) = p;
 
-	// bf(p) += 1 - min(0, bf(q));
-	bf(p, bf(p) + (1 - std::min(0, bf(q))));
-	// bf(q) += 1 + max(0, bf(p));
-	bf(q, bf(q) + (1 + std::max(0, bf(p))));
+	bf(p, bf(p) + (1 - std::min(0, bf(q)))); // bf(p) += 1 - min(0, bf(q));
+	bf(q, bf(q) + (1 + std::max(0, bf(p)))); // bf(q) += 1 + max(0, bf(p));
+
 	return q;
 }
 
@@ -264,12 +299,11 @@ Node *AVLTreeT<Node,traits>::left_right_rotate(Node *p)
 	Right(r) = p;
 	Left(r) = q;
 
-	// bf(q) -= 1 + max(0, bf(r));
-	bf(q, bf(q) - (1 + std::max(0, bf(r))));
-	// bf(p) += 1 - min(min(0, bf(r)) - 1, bf(r) + bf(q));
-	bf(p, bf(p) + (1 - std::min(std::min(0, bf(r)) - 1, bf(r) + bf(q))));
-	// bf(r) += max(0, bf(p)) + min(0, bf(q));
-	bf(r, bf(r) + (std::max(0, bf(p)) + std::min(0, bf(q))));
+	
+	bf(q, bf(q) - (1 + std::max(0, bf(r)))); // bf(q) -= 1 + max(0, bf(r));
+	bf(p, bf(p) + (1 - std::min(std::min(0, bf(r)) - 1, bf(r) + bf(q)))); // bf(p) += 1 - min(min(0, bf(r)) - 1, bf(r) + bf(q));
+	bf(r, bf(r) + (std::max(0, bf(p)) + std::min(0, bf(q)))); // bf(r) += max(0, bf(p)) + min(0, bf(q));
+
 	return r;
 }
 
@@ -298,12 +332,11 @@ Node *AVLTreeT<Node,traits>::right_left_rotate(Node *p)
 	Left(r) = p;
 	Right(r) = q;
 
-	// bf(q) += 1 - min(0, bf(r));
-	bf(q, bf(q) + (1 - std::min(0, bf(r))));
-	// bf(p) -= 1 + max(max(0, bf(r)) + 1, bf(r) + bf(q));
-	bf(p, bf(p) - (1 + std::max(std::max(0, bf(r)) + 1, bf(r) + bf(q))));
-	// bf(r) += max(0, bf(q)) + min(0, bf(p));
-	bf(r, bf(r) + (std::max(0, bf(q)) + std::min(0, bf(p))));
+	
+	bf(q, bf(q) + (1 - std::min(0, bf(r)))); // bf(q) += 1 - min(0, bf(r));
+	bf(p, bf(p) - (1 + std::max(std::max(0, bf(r)) + 1, bf(r) + bf(q)))); // bf(p) -= 1 + max(max(0, bf(r)) + 1, bf(r) + bf(q));
+	bf(r, bf(r) + (std::max(0, bf(q)) + std::min(0, bf(p)))); // bf(r) += max(0, bf(q)) + min(0, bf(p));
+	
 	return r;
 }
 
@@ -331,51 +364,45 @@ void AVLTreeT<Node,traits>::rebalance(Node *&r)
 template<typename Node, typename traits>
 inline
 bool
-AVLTreeT<Node,traits>::insertNode(node *&r,node *p, AVLTreeT<Node,traits>::Data data)
+AVLTreeT<Node,traits>::insertNode(node *&r,node *p, node *pData)
 {
 	auto success = false;
 	auto before = 0u;
 	if( r )
 	{
 		before = bf(r);
-		if( traits::lt(data, traits::data(r)) )
+		if( traits::lt(traits::data(pData), traits::data(r)) )
 		{
 			if( Left(r) )
 			{
-				success = insertNode(Left(r), r, data );
+				success = insertNode(Left(r), r, pData );
 			}
 			else
 			{
-				Left(r) =  traits::createNode(data);
-				if( Left(r) )
-				{
-					bf(r, bf(r) - 1 );
-					success = true;
-				}
+				Left(r) =  pData;
+				bf(r, bf(r) - 1 );
+				success = true;
 			}
 		}
-		else if( traits::lt(traits::data(r), data) )
+		else if( traits::lt(traits::data(r), traits::data(pData)) )
 		{
 			if( Right(r) )
 			{
-				success = insertNode(Right(r), r, data );
+				success = insertNode(Right(r), r, pData );
 			}
 			else
 			{
-				Right(r) = traits::createNode(data);
-				if( Right(r) )
-				{
-					bf(r, bf(r) + 1 );
-					success = true;
-				}
+				Right(r) = pData;
+				bf(r, bf(r) + 1 );
+				success = true;
 			}
 		}
+
 		if(success)
 		{
 			if (p && bf(r) && before == 0)
 			{
-				// bf(p) += (Left(p) == r ? (-1) : (+1));
-				bf(p, bf(p) + (Left(p) == r ? (-1) : (+1)));
+				bf(p, bf(p) + (Left(p) == r ? (-1) : (+1))); // bf(p) += (Left(p) == r ? (-1) : (+1));
 			}
 			
 			rebalance(r);
@@ -408,13 +435,11 @@ AVLTreeT<Node,traits>::stepDeleteLeft(node *target, node *&surrogate, node *&pre
 	{
 		if( prev == target )
 		{
-			// bf(prev)--;
-			bf(prev, bf(prev) + 1);
+			bf(prev, bf(prev) + 1); // bf(prev)--;
 		}
 		else
 		{
-			// bf(prev)++;
-			bf(prev, bf(prev) - 1);
+			bf(prev, bf(prev) - 1); // bf(prev)++;
 		}
 
 		rebalance(prev);
@@ -451,13 +476,11 @@ AVLTreeT<Node,traits>::stepDeleteRight(node *target, node *&surrogate, node *&pr
 	{
 		if( prev == target )
 		{
-			// bf(prev)++;
-			bf(prev, bf(prev) + 1);
+			bf(prev, bf(prev) + 1); // bf(prev)++;
 		}
 		else
 		{
-			// bf(prev)--;
-			bf(prev, bf(prev) - 1);
+			bf(prev, bf(prev) - 1); // bf(prev)--;
 		}
 
 		rebalance(prev);
@@ -508,21 +531,15 @@ AVLTreeT<Node,traits>::deleteNode(node *&r,AVLTreeT<Node,traits>::Data data, int
 			}
 			else
 			{
-				if( bf(r) > 0 )
-				{
-					old = stepDeleteLeft(r, Right(r), r, bf);
-				}
-				else
-				{
-					old = stepDeleteRight(r, Left(r), r, bf);
-				}
+				old = ( bf(r) > 0 )
+					? stepDeleteLeft(r, Right(r), r, bf)
+					: stepDeleteRight(r, Left(r), r, bf);
 				
 				if( bf(r) == 1 || bf(r) == -1 )
 				{
 					bf = 0;
 				}
 			}
-			// delete old;
             traits::deleteNode(old);
 		}
 		
@@ -530,8 +547,7 @@ AVLTreeT<Node,traits>::deleteNode(node *&r,AVLTreeT<Node,traits>::Data data, int
 		{
 			if(bf)
 			{
-				// bf(r) += direction;
-				bf(r, bf(r) + direction);
+				bf(r, bf(r) + direction); // bf(r) += direction;
 			}
 			
 			rebalance(r);
@@ -545,40 +561,67 @@ AVLTreeT<Node,traits>::deleteNode(node *&r,AVLTreeT<Node,traits>::Data data, int
 	return success;
 }
 
-
-
-struct Trunk
+template<typename Node, typename traits>
+inline
+Node *
+AVLTreeT<Node,traits>::removeNode(Node *&r,AVLTreeT<Node,traits>::Data data, int32_t &bf)
 {
-    std::shared_ptr<Trunk> prev{};
-    std::string str{};
-	inline static int count__ = 0;
-    Trunk()
-    {
-        ++count__;
-    }
-    ~Trunk()
-    {
-        --count__;
-    }
-    Trunk(std::shared_ptr<Trunk> prev, std::string str)
-    {
-        this->prev = prev;
-        this->str = str;
-        ++count__;
-    }
-};
+	auto direction = 0;
+	node *old = nullptr;
+	if(r)
+	{
+		if( traits::lt(data, traits::data(r)) )
+		{
+			direction = 1;
+			old = removeNode(Left(r), data,bf);
+		}
+		else if( traits::lt(traits::data(r), data) )
+		{
+			direction = -1;
+			old = removeNode(Right(r), data,bf);
+		}
+		else if( ! Left(r) )
+		{
+			old = r;
+			r = Right(r);
+			bf = 1;
+		}
+		else if ( ! Right(r) )
+		{
+			old =r;
+			r = Left(r);
+			bf = 1;
+		}
+		else
+		{
+			old =  ( bf(r) > 0 )
+					? stepDeleteLeft(r, Right(r), r, bf)
+					: stepDeleteRight(r, Left(r), r, bf);
 
-
-// Helper function to print branches of the binary tree
-inline void showTrunks(const Trunk *p)
-{
-    if (p == nullptr) {
-        return;
-    }
- 
-    showTrunks(p->prev.get());
-    std::cout << p->str;
+			if( bf(r) == 1 || bf(r) == -1 )
+			{
+				bf = 0;
+			}
+		}
+		
+		if( direction )
+		{
+			if(bf)
+			{
+				bf(r, bf(r) + direction); // bf(r) += direction;
+			}
+			
+			rebalance(r);
+			
+			if( bf(r) )
+			{
+				bf = 0;
+			}
+		}
+	}
+	return old;
 }
+
 
 template<typename NodePtr, typename traits>
 inline int32_t height(const NodePtr &r)
@@ -600,114 +643,6 @@ inline int32_t BF(const NodePtr &r)
 		bf = height<NodePtr, traits>(traits::Right(r)) - height<NodePtr, traits>(traits::Left(r));
 	}
 	return bf;
-}
-
-// Recursive function to print a binary tree.
-// It uses the inorder traversal.
-template<typename NodePtr, typename traits>
-inline void printTree(const NodePtr root, std::shared_ptr<Trunk> prev, bool isLeft)
-{
-    if (root == nullptr) {
-        return;
-    }
- 
-    std::string prev_str = "    ";
-    auto trunk = std::make_shared<Trunk>(prev, prev_str);
- 
-    printTree<NodePtr, traits>(traits::Right(root), trunk, true);
- 
-    if (!prev) {
-        trunk->str = "───";
-    }
-    else if (isLeft)
-    {
-        trunk->str = "╭───";
-        prev_str = "    │";
-    }
-    else {
-        trunk->str = "╰───";
-        prev->str = prev_str;
-    }
- 
-    showTrunks(trunk.get());
-    // std::cout << root->data << std::endl;
-	std::cout << root->data;
-	auto bf = BF<NodePtr, traits>(root);
-	while(bf>0)
-	{
-		std::cout << "+";
-		--bf;
-	}
-	while(bf<0)
-	{
-		std::cout << "-";
-		++bf;
-	}
-	std::cout << std::endl;
-
-    if (prev) {
-        prev->str = prev_str;
-    }
-    trunk->str = "    │";
- 
-    printTree<NodePtr, traits>(traits::Left(root), trunk, false);
-}
-
-template<typename NodePtr, typename traits>
-inline std::string toStr(const NodePtr n)
-{
-	std::stringstream ss{};
-	if(n)
-	{
-		auto bf = BF<NodePtr, traits>(n);
-		
-		ss << "\"" << n->data;
-		auto str = std::string{""};
-		while(bf>0)
-		{
-			ss << '+';
-			--bf;
-		}
-		while(bf<0)
-		{
-			ss << '-';
-			++bf;
-		}
-		ss << "\"";
-	}
-	return ss.str();
-}
-
-template<typename NodePtr, typename traits>
-inline void dottyTree(const NodePtr n)
-{
-	if(n && (traits::Left(n) || traits::Right(n)) )
-	{
-		auto s = toStr<NodePtr, traits>(n);
-		
-		if(traits::Left(n))
-		{
-			std::cout << '\t' << s << " -> {";
-			std::cout << toStr<NodePtr, traits>(traits::Left(n)) << " [color=red] ";
-			std::cout << "} [color=red arrowhead=vee]\n";
-		}
-		if(traits::Right(n))
-		{
-			std::cout << '\t' << s << " -> {";
-			std::cout << toStr<NodePtr, traits>(traits::Right(n)) << " [color=blue]";
-			std::cout << "} [color=blue arrowhead=vee]\n";
-		}
-		dottyTree<NodePtr,traits>(traits::Left(n));
-		dottyTree<NodePtr,traits>(traits::Right(n));
-	}
-}
-
-template<typename NodePtr, typename traits>
-inline void dottyTree(const AVLTreeT<NodePtr, traits> &tree)
-{
-	std::cout << "digraph {\n";
-	dottyTree<const NodePtr *, traits>(tree.rootNode());
-	std::cout << "}" << std::endl;
 }
 
 #endif // AVLTREET_H_INCLUDED

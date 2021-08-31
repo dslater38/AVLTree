@@ -660,27 +660,6 @@ AVLTreeT<Node,traits>::removeNode(Node *&r,AVLTreeT<Node,traits>::Data data, int
 }
 
 
-template<typename NodePtr, typename traits>
-inline int32_t height(const NodePtr &r)
-{
-	int32_t h = 0;
-	if(r)
-	{
-		h = std::max(height<NodePtr, traits>(traits::Left(r)), height<NodePtr, traits>(traits::Right(r))) + 1;
-	}
-	return h;
-}
-
-template<typename NodePtr, typename traits>
-inline int32_t BF(const NodePtr &r)
-{
-	int32_t bf = 0;
-	if(r)
-	{
-		bf = height<NodePtr, traits>(traits::Right(r)) - height<NodePtr, traits>(traits::Left(r));
-	}
-	return bf;
-}
 
 
 template<typename NodePtr, typename traits>

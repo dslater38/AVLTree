@@ -72,7 +72,7 @@ int main(int argc, char **argv)
     else
     {
         test2();
-        runTest();
+       // runTest();
     }
     return 0;
 }

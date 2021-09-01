@@ -4,3 +4,5 @@
 *.o
 *.pdb
 .vscode/**
+*build*/**
+*Build*/**

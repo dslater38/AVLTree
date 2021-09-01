@@ -39,6 +39,34 @@ struct VMNode
     int8_t    bf_ns{0};
 };
 
+struct CompareEW
+{
+    constexpr bool operator()( const VMNode& lhs, const VMNode& rhs ) const
+    {
+        return (lhs.data.address < rhs.data.address) && ( (static_cast<uint8_t *>(lhs.data.address) + (lhs.data.size - 1)) < rhs.data.address );
+    }
+};
+
+struct CompareNS
+{
+    constexpr bool operator()( const VMNode& lhs, const VMNode& rhs ) const
+    {
+        if ( lhs.data.size < rhs.data.size )
+        {
+            return true;
+        }
+        else if( rhs.data.size < lhs.data.size )
+        {
+            return false;
+        }
+        else
+        {
+            return lhs.data.address < rhs.data.address;
+        }
+    }
+};
+
+
 struct VMNodeTraitsEW
 {
     using Datatype = VirtBlock;
@@ -97,6 +125,13 @@ struct VMNodeTraitsEW
     static const Datatype &data(const Node *n)
     {
         return n->data;
+    }
+
+    static void swap(Node *a, Node *b)
+    {
+        std::swap(data(a), data(b));
+        std::swap(a->north, b->north);
+        std::swap(a->south, b->south);
     }
 };
 
@@ -170,19 +205,26 @@ struct VMNodeTraitsNS
     {
         return n->data;
     }
+    static void swap(Node *a, Node *b)
+    {
+        std::swap(data(a), data(b));
+        std::swap(a->east, b->east);
+        std::swap(a->west, b->west);
+    }
+
 };
 
 class VMVirtAddrManager
 {
 public:
-    using AddressTree = AVLTreeT<VMNode, VMNodeTraitsEW>;
-    using BlockSizeTree = AVLTreeT<VMNode, VMNodeTraitsNS>;
+    using AddressTree = AVLTreeT<VMNode, VMNodeTraitsEW, CompareEW>;
+    using BlockSizeTree = AVLTreeT<VMNode, VMNodeTraitsNS, CompareNS>;
     VMVirtAddrManager() = default;
     VMVirtAddrManager(VMVirtAddrManager &&) = default;
     VMVirtAddrManager & operator=(VMVirtAddrManager &&) = default;
     VMVirtAddrManager(const VMVirtAddrManager &) = delete;
     VMVirtAddrManager & operator=(const VMVirtAddrManager &) = delete;
-    ~VMVirtAddrManager() = default;
+    ~VMVirtAddrManager();
 
     bool addBlock(const VirtBlock &block);
 

@@ -12,19 +12,10 @@
 #include "AVLTreeT.h"
 #include "PrintTree.h"
 #include "VMVirtAddrManager.h"
+#include "BinaryTreeNodeT.h"
 
 using namespace std;
-
-// void walkTree(const NodePtr &node, int depth = 0);
-// void printTree(const AVLTree &tree);
-
-struct node2
-{
-    uint64_t data{0};
-    int32_t bf{0};
-	node2 *left{nullptr};
-    node2 *right{nullptr};
-};
+using node2 = BinaryTreeNodeT<uint64_t>;
 
 static void runTest();
 static void test2();
@@ -33,6 +24,9 @@ auto foo = AVLTreeT<node2>{};
 static auto dottyOutput = false;
 int main(int argc, char **argv)
 {
+#ifdef WIN32
+    SetConsoleOutputCP(65001);
+#endif        
     if(argc > 1)
     {
         auto i = 1;
@@ -40,24 +34,35 @@ int main(int argc, char **argv)
         {
             dottyOutput = true;
         }
-#ifdef WIN32
-    SetConsoleOutputCP(65001);
-#endif        
-        AVLTreeT<node2> tree{};
+        AVLTreeT<node2, node2::traits> tree{};
         for( auto i=1; i<argc; ++i )
         {
             char *strend = nullptr;
             const char *str = argv[i];
             errno = 0;
-            uint64_t data = std::strtoull(str, &strend, 10);
-            if( errno == 0 )
-            {
-                tree.insertNode(data);
-            }
-            else
-            {
-                std::cerr << "Error: bad integer: " << str << std::strerror(errno) << "\n";
-            }            
+            
+            
+                uint64_t data = std::strtoull(str, &strend, 10);
+                if (errno == 0)
+                {
+                    auto node = make_node<uint64_t>(data);
+                    if (node)
+                    {
+                        auto success = tree.insertNode(node.get());
+                        if (success)
+                        {
+                            node.release();
+                        }
+                        else
+                        {
+                            std::cerr << "Error: insertNode FAILED: " << str << "\n";
+                        }
+                    }
+                }
+                else
+                {
+                    std::cerr << "Error: bad integer: " << str << std::strerror(errno) << "\n";
+                }
         }
 
         if( dottyOutput )
@@ -66,7 +71,13 @@ int main(int argc, char **argv)
         }
         else
         {
-            printTree<const node2 *, DefaultNodeTraits<node2>>(tree.rootNode(), std::shared_ptr<Trunk>{}, false);
+            cout << "================ Iterate the tree ==================================\n";
+            for (const auto* n : tree)
+            {
+                cout << n->data() << ", ";
+            }
+            cout << "\n====================================================================\n";
+            printTree<const node2 *, node2::traits>(tree.rootNode(), std::shared_ptr<Trunk>{}, false);
         }        
     }
     else
@@ -79,10 +90,12 @@ int main(int argc, char **argv)
 
 static void lowerBound( AVLTreeT<node2> &t, uint64_t v)
 {
-    const auto *n = t.lowerBound(v);
+    auto node = node2{v};
+    // node.data = v;
+    const auto *n = t.lowerBound(&node);
     if(n)
     {
-        cout << "Lower Bound: " << v << " == " << n->data << '\n';
+        cout << "Lower Bound: " << v << " == " << n->data() << '\n';
     }
     else
     {
@@ -93,9 +106,11 @@ static void lowerBound( AVLTreeT<node2> &t, uint64_t v)
 static void runTest()
 {
     AVLTreeT<node2> tree{};
+    
     for( auto i=0ull; i<=50ull; ++i)
     {
-        tree.insertNode(i*2);
+        auto node = node2{i*2};
+        tree.insertNode(&node);
     }
 
     lowerBound(tree, 45);
@@ -132,10 +147,6 @@ static void test2()
     std::cout << std::setiosflags( std::cout.boolalpha );
     dottyTree<const VMNode *, VMNodeTraitsNS>(mgr.blockSizeTree.rootNode());
     std::cout << "}" << std::endl;
-
-    // printTree<const VMNode *, VMNodeTraitsEW>(mgr.addressTree.rootNode(), std::shared_ptr<Trunk>{}, false);
-    // cout << "======================\n"; 
-    // printTree<const VMNode *, VMNodeTraitsNS>(mgr.blockSizeTree.rootNode(), std::shared_ptr<Trunk>{}, false);
 
     return;
 

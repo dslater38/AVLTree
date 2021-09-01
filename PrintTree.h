@@ -79,18 +79,7 @@ inline std::string toStr(const NodePtr n)
 	{
 		auto bf = BF<NodePtr, traits>(n);
 		
-		ss << "\"" << n->data;
-		// auto str = std::string{""};
-		// while(bf>0)
-		// {
-		// 	ss << '+';
-		// 	--bf;
-		// }
-		// while(bf<0)
-		// {
-		// 	ss << '-';
-		// 	++bf;
-		// }
+		ss << "\"" << traits::data(n);
 		ss << "\"";
 	}
 	return ss.str();
@@ -125,7 +114,7 @@ inline void printTree(const NodePtr root, std::shared_ptr<Trunk> prev, bool isLe
  
     showTrunks(trunk.get());
     // std::cout << root->data << std::endl;
-	std::cout << root->data;
+	std::cout << traits::data(root);
 	auto bf = BF<NodePtr, traits>(root);
 	while(bf>0)
 	{
@@ -150,16 +139,37 @@ inline void printTree(const NodePtr root, std::shared_ptr<Trunk> prev, bool isLe
 template<typename NodePtr, typename traits>
 inline void dottyTree(const NodePtr n)
 {
-	if(n && (traits::Left(n) || traits::Right(n)) )
+	if(n /* && (traits::Left(n) || traits::Right(n)) */ )
 	{
 		auto s = toStr<NodePtr, traits>(n);
-		
+		auto bf = BF<NodePtr, traits>(n);
+		std::cout << s;
+		switch (bf)
+		{
+			case -2:
+				std::cout << " [style=filled,fillcolor=red]";
+				break;
+			case -1:
+				std::cout << " [style=filled,fillcolor=pink]";
+				break;
+			case 1:
+				std::cout << " [style=filled,fillcolor=cyan]";
+				break;
+			case 2:
+				std::cout << " [style=filled,fillcolor=blue]";
+				break;
+			default:
+				break;
+		}
+		std::cout << '\n';
+
 		if(traits::Left(n))
 		{
 			std::cout << '\t' << s << " -> {";
 			std::cout << toStr<NodePtr, traits>(traits::Left(n)) << " [color=red] ";
 			std::cout << "} [color=red arrowhead=vee]\n";
 		}
+
 		if(traits::Right(n))
 		{
 			std::cout << '\t' << s << " -> {";

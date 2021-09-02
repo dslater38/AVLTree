@@ -108,10 +108,10 @@ private:
 	NodePtr removeNode(NodePtr &r, NodePtr &parent, const NodePtr &pData, int32_t &bf, const Compare &cmp);
 
 
-	NodePtr &left_rotate(NodePtr &node);
-	NodePtr &right_rotate(NodePtr &node);
-	NodePtr &right_left_rotate(NodePtr &node);
-	NodePtr &left_right_rotate(NodePtr &node);
+	void left_rotate(NodePtr &node);
+	void right_rotate(NodePtr &node);
+	void right_left_rotate(NodePtr &node);
+	void left_right_rotate(NodePtr &node);
 	void rebalance(NodePtr &node);
 	NodePtr stepDeleteLeft(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf);
 	NodePtr stepDeleteRight(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf);
@@ -486,10 +486,10 @@ void AVLTreeT<NodePtr,traits,DefaultCompare>::dottyTree()const
  */
 template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::left_rotate(NodePtr &p)
+void AVLTreeT<NodePtr,traits,DefaultCompare>::left_rotate(NodePtr &p)
 {
 	
-	auto &q = Right(p);
+	auto q = std::forward<NodePtr>(Right(p));
 
 	REBALANCEMSG(std::string{ "Left Rotate p(" } + toStr<const NodePtr, traits>(p) + ") q(" + toStr<const NodePtr, traits>(q) + ") r(" + toStr<const NodePtr, traits>(Right(q)) + ")");
 
@@ -500,7 +500,7 @@ NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::left_rotate(NodePtr &p)
 	traits::bf(p, traits::bf(p) - (1 + std::max(0, traits::bf(q))) ); // bf(p) -= 1 + max(0, bf(q));
 	traits::bf(q, traits::bf(q) - (1 - std::min(0, traits::bf(p))) ); // bf(q) -= 1 - min(0, bf(p));
 	
-	return q;
+	p = std::forward<NodePtr>(q);
 }
 
 /*               right rotate
@@ -514,9 +514,9 @@ NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::left_rotate(NodePtr &p)
  */
 template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::right_rotate(NodePtr &p)
+void AVLTreeT<NodePtr,traits,DefaultCompare>::right_rotate(NodePtr &p)
 {
-	auto &q = Left(p);
+	auto q = std::forward<NodePtr>(Left(p));
 
 	REBALANCEMSG(std::string{ "Right Rotate p(" } + toStr<const NodePtr, traits>(p) + ") q(" + toStr<const NodePtr, traits>(q) + ") r(" + toStr<const NodePtr, traits>(Left(q)) + ")");
 
@@ -526,7 +526,8 @@ NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::right_rotate(NodePtr &p)
 	traits::bf(p, traits::bf(p) + (1 - std::min(0, traits::bf(q)))); // bf(p) += 1 - min(0, bf(q));
 	traits::bf(q, traits::bf(q) + (1 + std::max(0, traits::bf(p)))); // bf(q) += 1 + max(0, bf(p));
 
-	return q;
+	p = std::forward<NodePtr>(q);
+
 }
 
 
@@ -545,10 +546,10 @@ NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::right_rotate(NodePtr &p)
  */
 template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::left_right_rotate(NodePtr &p)
+void AVLTreeT<NodePtr,traits,DefaultCompare>::left_right_rotate(NodePtr &p)
 {
-	auto &q = Left(p);
-	auto &r = Right(q);
+	auto q = std::forward<NodePtr>(Left(p));
+	auto r = std::forward<NodePtr>(Right(q));
 
 	REBALANCEMSG(std::string{ "Left Right Rotate p(" } + toStr<const NodePtr, traits>(p) + ") q(" + toStr<const NodePtr, traits>(q) + ") r(" + toStr<const NodePtr, traits>(r) + ")");
 
@@ -561,8 +562,8 @@ NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::left_right_rotate(NodePtr &p)
 	traits::bf(q, traits::bf(q) - (1 + std::max(0, traits::bf(r)))); // bf(q) -= 1 + max(0, bf(r));
 	traits::bf(p, traits::bf(p) + (1 - std::min(std::min(0, traits::bf(r)) - 1, traits::bf(r) + traits::bf(q)))); // bf(p) += 1 - min(min(0, bf(r)) - 1, bf(r) + bf(q));
 	traits::bf(r, traits::bf(r) + (std::max(0, traits::bf(p)) + std::min(0, traits::bf(q)))); // bf(r) += max(0, bf(p)) + min(0, bf(q));
-	
-	return r;
+
+	p = std::forward<NodePtr>(r);
 }
 
 /*              right-left rotate
@@ -580,10 +581,10 @@ NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::left_right_rotate(NodePtr &p)
  */
 template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::right_left_rotate(NodePtr &p)
+void AVLTreeT<NodePtr,traits,DefaultCompare>::right_left_rotate(NodePtr &p)
 {
-	auto &q = Right(p);
-	auto &r = Left(q);
+	auto q = std::forward<NodePtr>(Right(p));
+	auto r = std::forward<NodePtr>(Left(q));
 
 	REBALANCEMSG(std::string{ "Left Right Rotate p(" } + toStr<const NodePtr, traits>(p) + ") q(" + toStr<const NodePtr, traits>(q) + ") r(" + toStr<const NodePtr, traits>(r) + ")");
 
@@ -597,7 +598,7 @@ NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::right_left_rotate(NodePtr &p)
 	traits::bf(p, traits::bf(p) - (1 + std::max(std::max(0, traits::bf(r)) + 1, traits::bf(r) + traits::bf(q)))); // bf(p) -= 1 + max(max(0, bf(r)) + 1, bf(r) + bf(q));
 	traits::bf(r, traits::bf(r) + (std::max(0, traits::bf(q)) + std::min(0, traits::bf(p)))); // bf(r) += max(0, bf(q)) + min(0, bf(p));
 
-	return r;
+	p = std::forward<NodePtr>(r);
 }
 
 template<typename NodePtr, typename traits, typename DefaultCompare>
@@ -609,15 +610,25 @@ void AVLTreeT<NodePtr,traits,DefaultCompare>::rebalance(NodePtr &r)
 	{
 		if(traits::bf(r) == -2 )
 		{
-			r = std::forward<NodePtr>((traits::bf(Left(r)) == 1)
-				? left_right_rotate(r)
-				: right_rotate(r));
+			if(traits::bf(Left(r)) == 1)
+			{
+				left_right_rotate(r);
+			}
+			else
+			{
+				right_rotate(r);
+			}
 		}
 		else if( traits::bf(r) == 2 )
 		{
-			r = std::forward<NodePtr>((traits::bf(Right(r)) == -1)
-				? right_left_rotate(r)
-				: left_rotate(r));
+			if(traits::bf(Right(r)) == -1)
+			{
+				right_left_rotate(r);
+			}
+			else
+			{
+				left_rotate(r);
+			}
 		}
 	}
 }

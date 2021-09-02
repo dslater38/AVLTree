@@ -1,13 +1,14 @@
 #ifndef BINARY_TREE_NODE_T_INCLUDED
 #define BINARY_TREE_NODE_T_INCLUDED
 #pragma once
-
+#include <memory>
 
 template<typename Data>
 class BinaryTreeNodeT
 {
 public:
     using Node = BinaryTreeNodeT<Data>;
+    using NodePtr = std::unique_ptr<Node>;
     BinaryTreeNodeT() = default;
     BinaryTreeNodeT(const BinaryTreeNodeT &) = default;
     BinaryTreeNodeT &operator=(const BinaryTreeNodeT &) = default;
@@ -20,10 +21,10 @@ public:
     {
     }
 
-    const Node* left()const { return leftChild;  }
-    Node* &left() { return leftChild; }
-    const Node* right()const { return rightChild; }
-    Node*& right() { return rightChild; }
+    const NodePtr &left()const { return leftChild;  }
+    NodePtr &left() { return leftChild; }
+    const NodePtr &right()const { return rightChild; }
+    NodePtr &right() { return rightChild; }
 
     int8_t bf()const { return bf_; }
     int8_t &bf() { return bf_; }
@@ -32,8 +33,8 @@ public:
     struct traits;
 private:
     Data    data_{};
-    Node* leftChild{ nullptr };
-    Node* rightChild{ nullptr };
+    NodePtr leftChild{  };
+    NodePtr rightChild{  };
     int8_t  bf_{ 0 };
 };
 
@@ -50,7 +51,7 @@ namespace std
 }
 
 template<typename Data, typename... Args>
-std::unique_ptr<BinaryTreeNodeT<Data>> make_node(Args &&... args)
+typename BinaryTreeNodeT<Data>::NodePtr make_node(Args &&... args)
 {
     return std::make_unique<BinaryTreeNodeT<Data>>(std::forward<Args>(args)...);
 }
@@ -58,34 +59,36 @@ std::unique_ptr<BinaryTreeNodeT<Data>> make_node(Args &&... args)
 template<typename Data>
 struct BinaryTreeNodeT<Data>::traits
 {
-    using Node = BinaryTreeNodeT<Data>;
-    static const Node* Left(const Node* n)
+    using Node = typename BinaryTreeNodeT<Data>::Node;
+    using NodePtr = typename BinaryTreeNodeT<Data>::NodePtr;
+
+    static const NodePtr &Left(const NodePtr &n)
     {
         return n->left();
     }
-    static Node*& Left(Node* n)
+    static NodePtr &Left(NodePtr &n)
     {
         return n->left();
     }
-    static Node*& Right(Node* n)
+    static NodePtr &Right(NodePtr &n)
     {
         return n->right();
     }
-    static const Node* Right(const Node* n)
+    static const NodePtr &Right(const NodePtr &n)
     {
         return n->right();
     }
-    static int32_t bf(const Node* n)
+    static int32_t bf(const NodePtr &n)
     {
         return static_cast<int32_t>(n->bf());
     }
 
-    static void bf(Node* n, int32_t b)
+    static void bf(NodePtr &n, int32_t b)
     {
         n->bf() = static_cast<int8_t>(b & 0x000000FF);
     }
 
-    static const Data& data(const Node* n)
+    static const Data& data(const NodePtr &n)
     {
         return n->data();
     }

@@ -41,27 +41,27 @@ struct VMNode
 
 struct CompareEW
 {
-    constexpr bool operator()( const VMNode& lhs, const VMNode& rhs ) const
+    constexpr bool operator()( const VMNode *lhs, const VMNode *rhs ) const
     {
-        return (lhs.data.address < rhs.data.address) && ( (static_cast<uint8_t *>(lhs.data.address) + (lhs.data.size - 1)) < rhs.data.address );
+        return (lhs->data.address < rhs->data.address) && ( (static_cast<uint8_t *>(lhs->data.address) + (lhs->data.size - 1)) < rhs->data.address );
     }
 };
 
 struct CompareNS
 {
-    constexpr bool operator()( const VMNode& lhs, const VMNode& rhs ) const
+    constexpr bool operator()( const VMNode *lhs, const VMNode *rhs ) const
     {
-        if ( lhs.data.size < rhs.data.size )
+        if ( lhs->data.size < rhs->data.size )
         {
             return true;
         }
-        else if( rhs.data.size < lhs.data.size )
+        else if( rhs->data.size < lhs->data.size )
         {
             return false;
         }
         else
         {
-            return lhs.data.address < rhs.data.address;
+            return lhs->data.address < rhs->data.address;
         }
     }
 };
@@ -217,8 +217,8 @@ struct VMNodeTraitsNS
 class VMVirtAddrManager
 {
 public:
-    using AddressTree = AVLTreeT<VMNode, VMNodeTraitsEW, CompareEW>;
-    using BlockSizeTree = AVLTreeT<VMNode, VMNodeTraitsNS, CompareNS>;
+    using AddressTree = AVLTreeT<VMNode *, VMNodeTraitsEW, CompareEW>;
+    using BlockSizeTree = AVLTreeT<VMNode *, VMNodeTraitsNS, CompareNS>;
     VMVirtAddrManager() = default;
     VMVirtAddrManager(VMVirtAddrManager &&) = default;
     VMVirtAddrManager & operator=(VMVirtAddrManager &&) = default;

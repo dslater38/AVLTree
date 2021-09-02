@@ -42,14 +42,13 @@
 //	};
 //}
 
-template<typename Node, typename traits=typename Node::traits, typename DefaultCompare=std::less<Node>>
+template<typename NodePtr, typename traits=typename NodePtr::traits, typename DefaultCompare=std::less<NodePtr>>
 class AVLTreeT
 {
 public:
-	using value_type = Node;
+	using value_type = NodePtr;
 
 public:
-    using node = Node;
 	AVLTreeT()=default;
 	AVLTreeT(const AVLTreeT&)=delete;
 	AVLTreeT &operator=(const AVLTreeT&)=delete;
@@ -61,19 +60,19 @@ public:
 	struct const_reverse_iterator;
 
 	template<typename Compare=DefaultCompare>
-	Node *removeNode(const Node *pNode, const Compare &cmp=Compare{});
+	NodePtr removeNode(const NodePtr &pNode, const Compare &cmp=Compare{});
 
 	template<typename Compare=DefaultCompare>
-	bool insertNode(node *pNode, const Compare &cmp=Compare{});
+	bool insertNode(NodePtr pNode, const Compare &cmp=Compare{});
 
 	template<typename Compare=DefaultCompare>
-	node *find(const Node *pNode, const Compare &cmp=Compare{});
+	NodePtr &find(const NodePtr &pNode, const Compare &cmp=Compare{});
 
 	template<typename Compare=DefaultCompare>
-	node *lowerBound(const Node *pData, const Compare &cmp=Compare{});
+	NodePtr &lowerBound(const NodePtr &pData, const Compare &cmp=Compare{});
 
-	node *rootNode() { return root; }
-	const node *rootNode()const { return root; }
+	NodePtr &rootNode() { return root; }
+	const NodePtr &rootNode()const { return root; }
 
 	void printTree()const;
 	void dottyTree()const;
@@ -85,39 +84,39 @@ public:
 	const_reverse_iterator rend()const;
 
 private:
-    node *&Left(node *n) { return traits::Left(n); }
-    node *&Right(node *n) { return traits::Right(n); }
-    const node *Left(node *n)const { return traits::Left(n); }
-    const node *Right(node *n)const { return traits::Right(n); }
+	static NodePtr &Left(NodePtr &n) { return traits::Left(n); }
+	static NodePtr &Right(NodePtr &n) { return traits::Right(n); }
+	static const NodePtr &Left(const NodePtr &n) { return traits::Left(n); }
+	static const NodePtr &Right(const NodePtr &n) { return traits::Right(n); }
 private:
 	template<typename Compare>
-	node *findNode(node *r, const node *pData, const Compare &cmp);
+	NodePtr &findNode(NodePtr &r, const NodePtr &pData, const Compare &cmp);
 
 	template<typename Compare>
-	node *lowerBound(node *r, const node *pData, const Compare &cmp);
+	NodePtr &lowerBound(NodePtr &r, const NodePtr &pData, const Compare &cmp);
 
 	template<typename Compare>
-	bool insertNode(node *&r,node *p, node *pData, const Compare &cmp);
+	bool insertNode(NodePtr &r, NodePtr &p, NodePtr &pData, const Compare &cmp);
 
 	// template<typename Compare>
 	// bool  deleteNode(node *&r,const node *pData, int32_t &bf, const Compare &cmp);
 
 	template<typename Compare>
-	node *removeNode(node *&r,const node *pData, int32_t &bf, const Compare &cmp);
+	NodePtr removeNode(NodePtr &r,const NodePtr &pData, int32_t &bf, const Compare &cmp);
 
 	template<typename Compare>
-	node *removeNode(node *&r,node *parent, const node *pData, int32_t &bf, const Compare &cmp);
+	NodePtr removeNode(NodePtr &r, NodePtr &parent, const NodePtr &pData, int32_t &bf, const Compare &cmp);
 
 
-	node *left_rotate(node *node);
-	node *right_rotate(node *node);
-	node *right_left_rotate(node *node);
-	node *left_right_rotate(node *node);
-	void rebalance(node *&node);
-	node *stepDeleteLeft(node *&target, node *surrogate, node *prev, int32_t &bf);
-	node *stepDeleteRight(node *&target, node *surrogate, node *prev, int32_t &bf);
+	NodePtr &left_rotate(NodePtr &node);
+	NodePtr &right_rotate(NodePtr &node);
+	NodePtr &right_left_rotate(NodePtr &node);
+	NodePtr &left_right_rotate(NodePtr &node);
+	void rebalance(NodePtr &node);
+	NodePtr stepDeleteLeft(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf);
+	NodePtr stepDeleteRight(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf);
 private:
-	node	*root{nullptr};
+	NodePtr root{};
 #if defined(DEBUG) || defined(_DEBUG)
 	inline static std::string rebalance_msg="";
 	inline void REBALANCEMSG(std::string s) {rebalance_msg=s;}
@@ -138,10 +137,10 @@ private:
 #endif
 };
 
-template<typename Node, typename traits, typename DefaultCompare>
-struct AVLTreeT<Node, traits, DefaultCompare>::const_iterator
+template<typename NodePtr, typename traits, typename DefaultCompare>
+struct AVLTreeT<NodePtr, traits, DefaultCompare>::const_iterator
 {
-	using Tree = AVLTreeT<Node, traits, DefaultCompare>;
+	using Tree = AVLTreeT<NodePtr, traits, DefaultCompare>;
 	using It = const_iterator;
 	const_iterator() = default;
 	const_iterator(const It&) = default;
@@ -151,14 +150,27 @@ struct AVLTreeT<Node, traits, DefaultCompare>::const_iterator
 	~const_iterator() = default;
 	bool operator==(const It& o)const
 	{
-		return o.stack == stack;
+		if (stack.empty() == o.stack.empty())
+		{
+			if (stack.empty())
+			{
+				return true;
+			}
+			else
+			{
+				const auto &a = stack.top();
+				const auto &b = o.stack.top();
+				return (cmp(a, b) == false && cmp(b, a) == false);
+			}
+		}
+		return false;
 	}
 	bool operator!=(const It& o)const { return !operator==(o); }
-	const Node* operator *()
+	const NodePtr &operator *()
 	{
 		return stack.top();
 	}
-	const Node* operator->()
+	const NodePtr &operator->()
 	{
 		return stack.top();
 	}
@@ -166,7 +178,7 @@ struct AVLTreeT<Node, traits, DefaultCompare>::const_iterator
 	{
 		if (!stack.empty())
 		{
-			auto* n = stack.top();
+			const auto &n = stack.top();
 			stack.pop();
 			pushLeftChildren(traits::Right(n));
 		}
@@ -178,26 +190,29 @@ struct AVLTreeT<Node, traits, DefaultCompare>::const_iterator
 		operator++();
 		return ret;
 	}
-	const_iterator(const AVLTreeT<Node, traits, DefaultCompare>& tree)
+	const_iterator(const AVLTreeT<NodePtr, traits, DefaultCompare>& tree)
 	{
 		pushLeftChildren(tree.rootNode());
 	}
 private:
-	void pushLeftChildren(const Node* pNode)
+	void pushLeftChildren(const NodePtr &pNode)
 	{
-		for (; pNode; pNode = traits::Left(pNode))
+		for (auto n = std::cref(pNode);
+			static_cast<bool>(n.get());
+			n = std::cref(traits::Left(n.get())))
 		{
-			stack.push(pNode);
+			stack.push(n);
 		}
 	}
 private:
-	std::stack<const Node*> stack{};
+	std::stack<std::reference_wrapper<const NodePtr>> stack{};
+	DefaultCompare	cmp{};
 };
 
-template<typename Node, typename traits, typename DefaultCompare>
-struct AVLTreeT<Node, traits, DefaultCompare>::const_reverse_iterator
+template<typename NodePtr, typename traits, typename DefaultCompare>
+struct AVLTreeT<NodePtr, traits, DefaultCompare>::const_reverse_iterator
 {
-	using Tree = AVLTreeT<Node, traits, DefaultCompare>;
+	using Tree = AVLTreeT<NodePtr, traits, DefaultCompare>;
 	using It = const_reverse_iterator;
 	const_reverse_iterator() = default;
 	const_reverse_iterator(const It&) = default;
@@ -205,16 +220,29 @@ struct AVLTreeT<Node, traits, DefaultCompare>::const_reverse_iterator
 	const_reverse_iterator(It&&) = default;
 	const_reverse_iterator& operator=(const_reverse_iterator&&) = default;
 	~const_reverse_iterator() = default;
-	bool operator==(const It& o)const
+	bool operator==(const It &o)const
 	{
-		return o.stack == stack;
+		if (stack.empty() == o.stack.empty())
+		{
+			if (stack.empty())
+			{
+				return true;
+			}
+			else
+			{
+				const auto &a = stack.top();
+				const auto &b = o.stack.top();
+				return (cmp(a, b) == false && cmp(b, a) == false);
+			}
+		}
+		return false;
 	}
 	bool operator!=(const It& o)const { return !operator==(o); }
-	const Node* operator *()
+	const NodePtr &operator *()
 	{
 		return stack.top();
 	}
-	const Node* operator->()
+	const NodePtr &operator->()
 	{
 		return stack.top();
 	}
@@ -234,50 +262,53 @@ struct AVLTreeT<Node, traits, DefaultCompare>::const_reverse_iterator
 		operator++();
 		return ret;
 	}
-	const_reverse_iterator(const AVLTreeT<Node, traits, DefaultCompare>& tree)
+	const_reverse_iterator(const AVLTreeT<NodePtr, traits, DefaultCompare>& tree)
 	{
 		pushRightChildren(tree.rootNode());
 	}
 private:
-	void pushRightChildren(const Node* pNode)
+	void pushRightChildren(const NodePtr &pNode)
 	{
-		for (; pNode; pNode = traits::Right(pNode))
+		for (auto n = std::cref(pNode);
+			static_cast<bool>(n.get());
+			n = std::cref(traits::Right(n.get())))
 		{
-			stack.push(pNode);
+			stack.push(n);
 		}
 	}
 private:
-	std::stack<const Node*> stack{};
+	std::stack<std::reference_wrapper<const NodePtr>> stack{};
+	DefaultCompare	cmp{};
 };
 
-template<typename Node, typename traits, typename DefaultCompare>
-typename AVLTreeT<Node, traits, DefaultCompare>::const_iterator AVLTreeT<Node, traits, DefaultCompare>::begin()const
+template<typename NodePtr, typename traits, typename DefaultCompare>
+typename AVLTreeT<NodePtr, traits, DefaultCompare>::const_iterator AVLTreeT<NodePtr, traits, DefaultCompare>::begin()const
 {
-	return AVLTreeT<Node, traits, DefaultCompare>::const_iterator{ *this };
+	return AVLTreeT<NodePtr, traits, DefaultCompare>::const_iterator{ *this };
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
-typename AVLTreeT<Node, traits, DefaultCompare>::const_iterator AVLTreeT<Node, traits, DefaultCompare>::end()const
+template<typename NodePtr, typename traits, typename DefaultCompare>
+typename AVLTreeT<NodePtr, traits, DefaultCompare>::const_iterator AVLTreeT<NodePtr, traits, DefaultCompare>::end()const
 {
-	return AVLTreeT<Node, traits, DefaultCompare>::const_iterator{};
+	return AVLTreeT<NodePtr, traits, DefaultCompare>::const_iterator{};
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
-typename AVLTreeT<Node, traits, DefaultCompare>::const_reverse_iterator AVLTreeT<Node, traits, DefaultCompare>::rbegin()const
+template<typename NodePtr, typename traits, typename DefaultCompare>
+typename AVLTreeT<NodePtr, traits, DefaultCompare>::const_reverse_iterator AVLTreeT<NodePtr, traits, DefaultCompare>::rbegin()const
 {
-	return AVLTreeT<Node, traits, DefaultCompare>::const_reverse_iterator{ *this };
+	return AVLTreeT<NodePtr, traits, DefaultCompare>::const_reverse_iterator{ *this };
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
-typename AVLTreeT<Node, traits, DefaultCompare>::const_reverse_iterator AVLTreeT<Node, traits, DefaultCompare>::rend()const
+template<typename NodePtr, typename traits, typename DefaultCompare>
+typename AVLTreeT<NodePtr, traits, DefaultCompare>::const_reverse_iterator AVLTreeT<NodePtr, traits, DefaultCompare>::rend()const
 {
-	return AVLTreeT<Node, traits, DefaultCompare>::const_reverse_iterator{};
+	return AVLTreeT<NodePtr, traits, DefaultCompare>::const_reverse_iterator{};
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
-Node *AVLTreeT<Node,traits,DefaultCompare>::findNode(Node *r, const Node *pData, const Compare &cmp)
+NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::findNode(NodePtr &r, const NodePtr &pData, const Compare &cmp)
 {
 	if(r)
 	{
@@ -293,46 +324,47 @@ Node *AVLTreeT<Node,traits,DefaultCompare>::findNode(Node *r, const Node *pData,
 	return r;
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
-Node *AVLTreeT<Node,traits,DefaultCompare>::lowerBound(Node *r, const Node *pNode, const Compare &cmp)
+NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::lowerBound(NodePtr &r, const NodePtr &pNode, const Compare &cmp)
 {
 	if(r)
 	{
-		if( cmp(*pNode, *r) )
+		if( cmp(pNode, r) )
 		{
-			auto tmp = lowerBound(Left(r),pNode, cmp);
+			auto &tmp = lowerBound(Left(r),pNode, cmp);
 			if(tmp &&
-				( cmp(*pNode, *tmp) || !cmp(*tmp, *pNode) )
+				( cmp(pNode, tmp) || !cmp(tmp, pNode) )
 			) {
-				r = tmp;
+				return tmp;
 			}
 		}
-		else if( cmp(*r, *pNode) )
+		else if( cmp(r, pNode) )
 		{
-			r = lowerBound(Right(r), pNode, cmp);
+			return lowerBound(Right(r), pNode, cmp);
 		}
 	}
 	return r;
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
-bool AVLTreeT<Node,traits,DefaultCompare>::insertNode(Node *pNewNode, const Compare &cmp)
+bool AVLTreeT<NodePtr,traits,DefaultCompare>::insertNode(NodePtr pNewNode, const Compare &cmp)
 {
 	auto success = (pNewNode != nullptr);
 	if(success)
 	{
 		if(root)
 		{
-			success = insertNode(root, nullptr, pNewNode, cmp);
+			NodePtr p{ nullptr };
+			success = insertNode(root, p, pNewNode, cmp);
 		}
 		else
 		{
-			root = pNewNode;
-			ANIMATE(std::string{ "Insert Node: " } + toStr<const Node *,traits>(pNewNode));
+			root = std::move(pNewNode);
+			ANIMATE(std::string{ "Insert Node: " } + toStr<const NodePtr,traits>(pNewNode));
 		}
 	}
 	return success;
@@ -353,37 +385,37 @@ bool AVLTreeT<Node,traits,DefaultCompare>::insertNode(Node *pNewNode, const Comp
 // 	return success;
 // }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
-Node *AVLTreeT<Node,traits,DefaultCompare>::removeNode(const Node *pNode, const Compare &cmp)
+NodePtr AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(const NodePtr &pNode, const Compare &cmp)
 {
 	int32_t bf = 0;
 	return removeNode(root, pNode, bf, cmp);
 }
 
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
-Node *AVLTreeT<Node,traits,DefaultCompare>::find(const Node *pData, const Compare &cmp)
+NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::find(const NodePtr &pData, const Compare &cmp)
 {
 	return pData ? findNode(root, pData, cmp) : false;
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
-Node *AVLTreeT<Node,traits,DefaultCompare>::lowerBound(const Node *pNode, const Compare &cmp)
+NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::lowerBound(const NodePtr &pNode, const Compare &cmp)
 {
 	return lowerBound(root, pNode, cmp);
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-void AVLTreeT<Node,traits,DefaultCompare>::printTree()const
+void AVLTreeT<NodePtr,traits,DefaultCompare>::printTree()const
 {
-	::printTree<const Node *, traits>(rootNode(), std::shared_ptr<Trunk>{}, false);
+	::printTree<const NodePtr &, traits>(rootNode(), std::shared_ptr<Trunk>{}, false);
 }
 
 template<typename NodePtr, typename traits, typename DefaultCompare>
@@ -391,10 +423,10 @@ inline void dottyTree(const AVLTreeT<NodePtr, traits, DefaultCompare>& tree)
 {
 	std::cout << "digraph {\n";
 
-	for (const auto* n : tree)
+	for (const NodePtr &n : tree)
 	{
-		auto s = toStr<const NodePtr *, traits>(n);
-		auto bf = BF<const NodePtr*, traits>(n);
+		auto s = toStr<const NodePtr, traits>(n);
+		auto bf = BF<const NodePtr, traits>(n);
 		std::cout << s;
 		switch (bf)
 		{
@@ -415,20 +447,20 @@ inline void dottyTree(const AVLTreeT<NodePtr, traits, DefaultCompare>& tree)
 		}
 		std::cout << '\n';		
 	}
-	for (const auto* n : tree)
+	for (const NodePtr &n : tree)
 	{
-		auto s = toStr<const NodePtr *, traits>(n);
+		auto s = toStr<const NodePtr, traits>(n);
 		if (traits::Left(n))
 		{
 			std::cout << '\t' << s << " -> {";
-			std::cout << toStr<const NodePtr *, traits>(traits::Left(n)) << " [color=red] ";
+			std::cout << toStr<const NodePtr, traits>(traits::Left(n)) << " [color=red] ";
 			std::cout << "} [color=red arrowhead=vee]\n";
 		}
 
 		if (traits::Right(n))
 		{
 			std::cout << '\t' << s << " -> {";
-			std::cout << toStr<const NodePtr*, traits>(traits::Right(n)) << " [color=blue]";
+			std::cout << toStr<const NodePtr, traits>(traits::Right(n)) << " [color=blue]";
 			std::cout << "} [color=blue arrowhead=vee]\n";
 		}
 	}
@@ -438,9 +470,9 @@ inline void dottyTree(const AVLTreeT<NodePtr, traits, DefaultCompare>& tree)
 	std::cout << "}" << std::endl;
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-void AVLTreeT<Node,traits,DefaultCompare>::dottyTree()const
+void AVLTreeT<NodePtr,traits,DefaultCompare>::dottyTree()const
 {
 	::dottyTree(*this);
 }
@@ -452,17 +484,17 @@ void AVLTreeT<Node,traits,DefaultCompare>::dottyTree()const
  *       \ 
  *        3
  */
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-Node *AVLTreeT<Node,traits,DefaultCompare>::left_rotate(Node *p)
+NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::left_rotate(NodePtr &p)
 {
 	
-	auto *q = Right(p);
+	auto &q = Right(p);
 
-	REBALANCEMSG(std::string{ "Left Rotate p(" } + toStr<const Node*, traits>(p) + ") q(" + toStr<const Node*, traits>(q) + ") r(" + toStr<const Node*, traits>(Right(q)) + ")");
+	REBALANCEMSG(std::string{ "Left Rotate p(" } + toStr<const NodePtr, traits>(p) + ") q(" + toStr<const NodePtr, traits>(q) + ") r(" + toStr<const NodePtr, traits>(Right(q)) + ")");
 
-	Right(p) = Left(q);
-	Left(q) = p;
+	Right(p) = std::forward<NodePtr>(Left(q));
+	Left(q) = std::forward<NodePtr>(p);
 
 	
 	traits::bf(p, traits::bf(p) - (1 + std::max(0, traits::bf(q))) ); // bf(p) -= 1 + max(0, bf(q));
@@ -480,16 +512,16 @@ Node *AVLTreeT<Node,traits,DefaultCompare>::left_rotate(Node *p)
  *      1
  *    
  */
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-Node *AVLTreeT<Node,traits,DefaultCompare>::right_rotate(Node *p)
+NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::right_rotate(NodePtr &p)
 {
-	auto *q = Left(p);
+	auto &q = Left(p);
 
-	REBALANCEMSG(std::string{ "Right Rotate p(" } + toStr<const Node*, traits>(p) + ") q(" + toStr<const Node*, traits>(q) + ") r(" + toStr<const Node*, traits>(Left(q)) + ")");
+	REBALANCEMSG(std::string{ "Right Rotate p(" } + toStr<const NodePtr, traits>(p) + ") q(" + toStr<const NodePtr, traits>(q) + ") r(" + toStr<const NodePtr, traits>(Left(q)) + ")");
 
-	Left(p) = Right(q);
-	Right(q) = p;
+	Left(p) = std::forward<NodePtr>(Right(q));
+	Right(q) = std::forward<NodePtr>(p);
 
 	traits::bf(p, traits::bf(p) + (1 - std::min(0, traits::bf(q)))); // bf(p) += 1 - min(0, bf(q));
 	traits::bf(q, traits::bf(q) + (1 + std::max(0, traits::bf(p)))); // bf(q) += 1 + max(0, bf(p));
@@ -511,19 +543,19 @@ Node *AVLTreeT<Node,traits,DefaultCompare>::right_rotate(Node *p)
  *  note that left-right rotate could be implemented as a call to 
  *  left_rotate(Q) followed by a call to right_rotate(P).
  */
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-Node *AVLTreeT<Node,traits,DefaultCompare>::left_right_rotate(Node *p)
+NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::left_right_rotate(NodePtr &p)
 {
-	auto *q = Left(p);
-	auto *r = Right(q);
+	auto &q = Left(p);
+	auto &r = Right(q);
 
-	REBALANCEMSG(std::string{ "Left Right Rotate p(" } + toStr<const Node*, traits>(p) + ") q(" + toStr<const Node*, traits>(q) + ") r(" + toStr<const Node*, traits>(r) + ")");
+	REBALANCEMSG(std::string{ "Left Right Rotate p(" } + toStr<const NodePtr, traits>(p) + ") q(" + toStr<const NodePtr, traits>(q) + ") r(" + toStr<const NodePtr, traits>(r) + ")");
 
-	Right(q) = Left(r);
-	Left(p) = Right(r);
-	Right(r) = p;
-	Left(r) = q;
+	Right(q) = std::forward<NodePtr>(Left(r));
+	Left(p) = std::forward<NodePtr>(Right(r));
+	Right(r) = std::forward<NodePtr>(p);
+	Left(r) = std::forward<NodePtr>(q);
 
 	
 	traits::bf(q, traits::bf(q) - (1 + std::max(0, traits::bf(r)))); // bf(q) -= 1 + max(0, bf(r));
@@ -546,19 +578,19 @@ Node *AVLTreeT<Node,traits,DefaultCompare>::left_right_rotate(Node *p)
  *  note that right-left rotate could be implemented as a call to 
  *  right_rotate(Q) followed by a call to left_rotate(P).
  */
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-Node *AVLTreeT<Node,traits,DefaultCompare>::right_left_rotate(Node *p)
+NodePtr &AVLTreeT<NodePtr,traits,DefaultCompare>::right_left_rotate(NodePtr &p)
 {
-	auto *q = Right(p);
-	auto *r = Left(q);
+	auto &q = Right(p);
+	auto &r = Left(q);
 
-	REBALANCEMSG(std::string{ "Left Right Rotate p(" } + toStr<const Node*, traits>(p) + ") q(" + toStr<const Node*, traits>(q) + ") r(" + toStr<const Node*, traits>(r) + ")");
+	REBALANCEMSG(std::string{ "Left Right Rotate p(" } + toStr<const NodePtr, traits>(p) + ") q(" + toStr<const NodePtr, traits>(q) + ") r(" + toStr<const NodePtr, traits>(r) + ")");
 
-	Left(q) = Right(r);
-	Right(p) = Left(r);
-	Left(r) = p;
-	Right(r) = q;
+	Left(q) = std::forward<NodePtr>(Right(r));
+	Right(p) = std::forward<NodePtr>(Left(r));
+	Left(r) = std::forward<NodePtr>(p);
+	Right(r) = std::forward<NodePtr>(q);
 
 	
 	traits::bf(q, traits::bf(q) + (1 - std::min(0, traits::bf(r)))); // bf(q) += 1 - min(0, bf(r));
@@ -568,40 +600,40 @@ Node *AVLTreeT<Node,traits,DefaultCompare>::right_left_rotate(Node *p)
 	return r;
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-void AVLTreeT<Node,traits,DefaultCompare>::rebalance(Node *&r)
+void AVLTreeT<NodePtr,traits,DefaultCompare>::rebalance(NodePtr &r)
 {
 	REBALANCEMSG("");
 	if(r)
 	{
 		if(traits::bf(r) == -2 )
 		{
-			r = (traits::bf(Left(r)) == 1)
+			r = std::forward<NodePtr>((traits::bf(Left(r)) == 1)
 				? left_right_rotate(r)
-				: right_rotate(r);
+				: right_rotate(r));
 		}
 		else if( traits::bf(r) == 2 )
 		{
-			r = (traits::bf(Right(r)) == -1)
+			r = std::forward<NodePtr>((traits::bf(Right(r)) == -1)
 				? right_left_rotate(r)
-				: left_rotate(r);
+				: left_rotate(r));
 		}
 	}
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
 bool
-AVLTreeT<Node,traits,DefaultCompare>::insertNode(node *&r,node *p, node *pData, const Compare &cmp)
+AVLTreeT<NodePtr,traits,DefaultCompare>::insertNode(NodePtr &r, NodePtr &p, NodePtr &pData, const Compare &cmp)
 {
 	auto success = false;
 	auto before = 0u;
 	if( r )
 	{
 		before = traits::bf(r);
-		if( cmp(*pData, *r) )
+		if( cmp(pData, r) )
 		{
 			if( Left(r) )
 			{
@@ -609,13 +641,13 @@ AVLTreeT<Node,traits,DefaultCompare>::insertNode(node *&r,node *p, node *pData, 
 			}
 			else
 			{
-				Left(r) =  pData;
+				Left(r) =  std::move(pData);
 				traits::bf(r, traits::bf(r) - 1 );
-				ANIMATE(std::string{ "Insert Node: " } + toStr<const Node*, traits>(pData));
+				ANIMATE(std::string{ "Insert Node: " } + toStr<const NodePtr, traits>(pData));
 				success = true;
 			}
 		}
-		else if( cmp(*r, *pData) )
+		else if( cmp(r, pData) )
 		{
 			if( Right(r) )
 			{
@@ -623,9 +655,9 @@ AVLTreeT<Node,traits,DefaultCompare>::insertNode(node *&r,node *p, node *pData, 
 			}
 			else
 			{
-				Right(r) = pData;
+				Right(r) = std::move(pData);
 				traits::bf(r, traits::bf(r) + 1 );
-				ANIMATE(std::string{ "Insert Node: " } + toStr<const Node*, traits>(pData));
+				ANIMATE(std::string{ "Insert Node: " } + toStr<const NodePtr, traits>(pData));
 				success = true;
 			}
 		}
@@ -644,12 +676,12 @@ AVLTreeT<Node,traits,DefaultCompare>::insertNode(node *&r,node *p, node *pData, 
 	return success;
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-Node *
-AVLTreeT<Node,traits,DefaultCompare>::stepDeleteLeft(node *&target, node *surrogate, node *prev, int32_t &bf)
+NodePtr
+AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteLeft(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf)
 {
-	node *rm = nullptr;
+	NodePtr rm{};
 	
 	if( ! Left(surrogate) )
 	{
@@ -671,13 +703,13 @@ AVLTreeT<Node,traits,DefaultCompare>::stepDeleteLeft(node *&target, node *surrog
 		Left(surrogate) = Left(target);
 		Right(surrogate) = Right(target);
 		Left(target) = Right(target) = nullptr;
-		rm = target;
-		target = surrogate;
+		rm = std::move(target);
+		target = std::move(surrogate);
 		// traits::swap(target, rm);
 		// std::swap(traits::data(target), traits::data(rm));
 		// surrogate = Right(surrogate);
 		bf = 1;
-		ANIMATE(std::string{ "Step Delete Left: " } + toStr<const Node*, traits>(rm) );
+		ANIMATE(std::string{ "Step Delete Left: " } + toStr<const NodePtr, traits>(rm) );
 	}
 	else
 	{
@@ -706,12 +738,12 @@ AVLTreeT<Node,traits,DefaultCompare>::stepDeleteLeft(node *&target, node *surrog
 	return rm;
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
-Node *
-AVLTreeT<Node,traits,DefaultCompare>::stepDeleteRight(node *&target, node *surrogate, node *prev, int32_t &bf)
+NodePtr
+AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteRight(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf)
 {
-	node *rm = nullptr;
+	NodePtr rm{};
 	
 	if( !Right(surrogate) )
 	{
@@ -732,13 +764,13 @@ AVLTreeT<Node,traits,DefaultCompare>::stepDeleteRight(node *&target, node *surro
 		Left(surrogate) = Left(target);
 		Right(surrogate) = Right(target);
 		Left(target) = Right(target) = nullptr;
-		rm = target;
-		target = surrogate;
+		rm = std::move(target);
+		target = std::move(surrogate);
 //		traits::swap(target, rm);
 //		// std::swap(traits::data(target), traits::data(rm));
 //		surrogate = Left(surrogate);
 		bf = 1;
-		ANIMATE(std::string{ "Step Delete Right: " } + toStr<const Node*, traits>(rm));
+		ANIMATE(std::string{ "Step Delete Right: " } + toStr<const NodePtr, traits>(rm));
 	}
 	else
 	{
@@ -839,13 +871,13 @@ AVLTreeT<Node,traits,DefaultCompare>::stepDeleteRight(node *&target, node *surro
 // 	return success;
 // }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
-inline Node *
-AVLTreeT<Node,traits,DefaultCompare>::removeNode(node *&r,node *parent, const node *pData, int32_t &bf, const Compare &cmp)
+inline NodePtr
+AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(NodePtr &r, NodePtr &parent, const NodePtr &pData, int32_t &bf, const Compare &cmp)
 {
 	auto direction = 0;
-	node *old = nullptr;
+	NodePtr old{};
 	if(r)
 	{
 		if( cmp(*pData, *r) )
@@ -860,15 +892,15 @@ AVLTreeT<Node,traits,DefaultCompare>::removeNode(node *&r,node *parent, const no
 		}
 		else if( ! Left(r) )
 		{
-			old = r;
-			r = Right(r);
+			old = std::move(r);
+			r = std::move(Right(old));
 			bf = 1;
 			ANIMATE(std::string{ "Remove Node: " } + toStr(old));
 		}
 		else if ( ! Right(r) )
 		{
-			old = r;
-			r = Left(r);
+			old = std::move(r);
+			r = std::move(Left(old));
 			bf = 1;
 			ANIMATE(std::string{ "Remove Node: " } + toStr(old));
 		}
@@ -878,16 +910,16 @@ AVLTreeT<Node,traits,DefaultCompare>::removeNode(node *&r,node *parent, const no
 					? stepDeleteLeft(r, Right(r), r, bf)
 					: stepDeleteRight(r, Left(r), r, bf);
 
-			Left(old) = Left(r);
-			Right(old) = Right(r);
+			Left(old) = std::move(Left(r));
+			Right(old) = std::move(Right(r));
 			if(Left(parent) == r )
 			{
-				Left(parent) = old;
+				Left(parent) = std::move(old);
 			}
 			else
 			{
 				assert(Right(parent) == old);
-				Right(parent) = old;
+				Right(parent) = std::move(old);
 			}
 			std::swap(old,r);
 
@@ -916,39 +948,39 @@ AVLTreeT<Node,traits,DefaultCompare>::removeNode(node *&r,node *parent, const no
 	return old;
 }
 
-template<typename Node, typename traits, typename DefaultCompare>
+template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
-Node *
-AVLTreeT<Node,traits,DefaultCompare>::removeNode(Node *&r,const Node *pData, int32_t &bf, const Compare &cmp)
+NodePtr
+AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(NodePtr &r,const NodePtr &pData, int32_t &bf, const Compare &cmp)
 {
 	auto direction = 0;
-	node *old = nullptr;
+	NodePtr old{};
 	if(r)
 	{
-		if( cmp(*pData, *r) )
+		if( cmp(pData, r) )
 		{
 			direction = 1;
 			old = removeNode(Left(r), pData, bf, cmp);
 		}
-		else if( cmp(*r, *pData) )
+		else if( cmp(r, pData) )
 		{
 			direction = -1;
 			old = removeNode(Right(r), pData, bf, cmp);
 		}
 		else if( ! Left(r) )
 		{
-			old = r;
-			r = Right(r);
+			old = std::move(r);
+			r = std::move(Right(old));
 			bf = 1;
-			ANIMATE(std::string{ "Remove Node: " } + toStr<const Node*, traits>(old));
+			ANIMATE(std::string{ "Remove Node: " } + toStr<const NodePtr, traits>(old));
 		}
 		else if ( ! Right(r) )
 		{
-			old =r;
-			r = Left(r);
+			old = std::move(r);
+			r = std::move(Left(old));
 			bf = 1;
-			ANIMATE(std::string{ "Remove Node: " } + toStr<const Node*, traits>(old));
+			ANIMATE(std::string{ "Remove Node: " } + toStr<const NodePtr, traits>(old));
 		}
 		else
 		{

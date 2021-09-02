@@ -61,7 +61,7 @@ inline void showTrunks(const Trunk *p)
 }
 
 template<typename NodePtr, typename traits>
-inline std::string toStr(const NodePtr n)
+inline std::string toStr(const NodePtr &n)
 {
 	std::stringstream ss{};
     

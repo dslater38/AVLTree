@@ -34,7 +34,7 @@ int main(int argc, char **argv)
         {
             dottyOutput = true;
         }
-        AVLTreeT<node2, node2::traits> tree{};
+        AVLTreeT<node2::NodePtr, node2::traits> tree{};
         for( auto i=1; i<argc; ++i )
         {
             char *strend = nullptr;
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
                     auto node = make_node<uint64_t>(data);
                     if (node)
                     {
-                        auto success = tree.insertNode(node.get());
+                        auto success = tree.insertNode(std::move(node));
                         if (success)
                         {
                             node.release();
@@ -72,12 +72,12 @@ int main(int argc, char **argv)
         else
         {
             cout << "================ Iterate the tree ==================================\n";
-            for (const auto* n : tree)
+            for (const auto &n : tree)
             {
                 cout << n->data() << ", ";
             }
             cout << "\n====================================================================\n";
-            printTree<const node2 *, node2::traits>(tree.rootNode(), std::shared_ptr<Trunk>{}, false);
+            printTree<node2::NodePtr &, node2::traits>(tree.rootNode(), std::shared_ptr<Trunk>{}, false);
         }        
     }
     else
@@ -88,11 +88,11 @@ int main(int argc, char **argv)
     return 0;
 }
 
-static void lowerBound( AVLTreeT<node2> &t, uint64_t v)
+static void lowerBound(AVLTreeT<node2::NodePtr, node2::traits> &t, uint64_t v)
 {
-    auto node = node2{v};
+    node2::NodePtr node = make_node<uint64_t>(v);
     // node.data = v;
-    const auto *n = t.lowerBound(&node);
+    const auto &n = t.lowerBound(node);
     if(n)
     {
         cout << "Lower Bound: " << v << " == " << n->data() << '\n';
@@ -105,13 +105,14 @@ static void lowerBound( AVLTreeT<node2> &t, uint64_t v)
 
 static void runTest()
 {
-    AVLTreeT<node2> tree{};
+    AVLTreeT<node2::NodePtr, node2::traits> tree{};
     
     for( auto i=0ull; i<=50ull; ++i)
     {
-        auto node = node2{i*2};
-        tree.insertNode(&node);
+        auto node = make_node<uint64_t>(i * 2);
+        tree.insertNode(std::move(node));
     }
+
 
     lowerBound(tree, 45);
     lowerBound(tree, 44);

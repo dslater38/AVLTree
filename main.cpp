@@ -49,11 +49,7 @@ int main(int argc, char **argv)
                     if (node)
                     {
                         auto success = tree.insertNode(std::move(node));
-                        if (success)
-                        {
-                            node.release();
-                        }
-                        else
+                        if (!success)
                         {
                             std::cerr << "Error: insertNode FAILED: " << str << "\n";
                         }

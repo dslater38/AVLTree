@@ -77,7 +77,7 @@ inline std::string toStr(const NodePtr &n)
 
 	if(n)
 	{
-		auto bf = BF<NodePtr, traits>(n);
+		// auto bf = BF<NodePtr, traits>(n);
 		
 		ss << "\"" << traits::data(n);
 		ss << "\"";

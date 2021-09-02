@@ -551,6 +551,11 @@ template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
 NodePtr AVLTreeT<NodePtr,traits,DefaultCompare>::left_right_rotate(NodePtr &&p)
 {
+#ifdef VERBOSE_ROTATIONS
+	Left(p) = left_rotate(std::forward<NodePtr>(Left(p)));
+	Left(p) = rebalance(std::forward<NodePtr>(Left(p)));
+	return right_rotate(std::forward<NodePtr>(p));
+#else
 	auto q = std::forward<NodePtr>(Left(p));
 	auto r = std::forward<NodePtr>(Right(q));
 
@@ -568,6 +573,7 @@ NodePtr AVLTreeT<NodePtr,traits,DefaultCompare>::left_right_rotate(NodePtr &&p)
 	
 
 	return r;
+#endif
 }
 
 /*              right-left rotate
@@ -587,6 +593,12 @@ template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
 NodePtr AVLTreeT<NodePtr,traits,DefaultCompare>::right_left_rotate(NodePtr &&p)
 {
+#ifdef VERBOSE_ROTATIONS
+	Right(p) = right_rotate(std::forward<NodePtr>(Right(p)));
+	Right(p) = rebalance(std::forward<NodePtr>(Right(p)));
+	return left_rotate(std::forward<NodePtr>(p));
+#else
+
 	auto q = std::forward<NodePtr>(Right(p));
 	auto r = std::forward<NodePtr>(Left(q));
 
@@ -604,6 +616,7 @@ NodePtr AVLTreeT<NodePtr,traits,DefaultCompare>::right_left_rotate(NodePtr &&p)
 
 
 	return r;
+#endif
 }
 
 template<typename NodePtr, typename traits, typename DefaultCompare>
@@ -703,15 +716,17 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteLeft(NodePtr &target, NodePtr
 	if( ! Left(surrogate) )
 	{
 		// remove surrogate from it's parent
-		if( Left(prev) == surrogate )
+		auto tmp = std::move(surrogate);
+		if( Left(prev) == tmp )
 		{
 			Left(prev) = Right(surrogate);
 		}
 		else
 		{
-			assert(Right(prev) == surrogate);
-			Right(prev) = Right(surrogate);
+			assert(Right(prev) == tmp);			
+			Right(prev) = Right(tmp);			
 		}
+		surrogate = std::move(tmp);
 		// and exchange surrogate for target
 		// copy target's bf to surrogate, as surrogate is
 		// taking target's place in the tree.
@@ -764,15 +779,17 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteRight(NodePtr &target, NodePt
 	
 	if( !Right(surrogate) )
 	{
-		if( Left(prev) == surrogate )
+		auto tmp = std::move(surrogate);
+		if( Left(prev) == tmp)
 		{
-			Left(prev) = Left(surrogate);
+			Left(prev) = Left(tmp);
 		}
 		else
 		{
-			assert(Right(prev) == surrogate);
-			Right(prev) = Left(surrogate);
+			assert(Right(prev) == tmp);
+			Right(prev) = Left(tmp);
 		}
+		surrogate = std::move(tmp);
 		// and exchange surrogate for target
 		// copy target's bf to surrogate, as surrogate is
 		// taking target's place in the tree.

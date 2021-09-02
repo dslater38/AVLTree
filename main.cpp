@@ -9,6 +9,7 @@
 #include <string>
 #include <limits>
 #include <cerrno>
+#include <fstream>
 #include "AVLTreeT.h"
 #include "PrintTree.h"
 #include "VMVirtAddrManager.h"
@@ -16,6 +17,10 @@
 
 using namespace std;
 using node2 = BinaryTreeNodeT<uint64_t>;
+
+string generateHtml(const string &dotsArrayStr);
+extern const string htmlTemplate1;
+extern const string htmlTemplate2;
 
 static void runTest();
 static void test2();
@@ -29,11 +34,21 @@ int main(int argc, char **argv)
 #endif        
     if(argc > 1)
     {
-        auto i = 1;
+        // auto i = 1;
         if( *(argv[1]) == '-' && *(argv[1]+1) == 'd' )
         {
             dottyOutput = true;
         }
+#ifdef DEBUG
+        filebuf buffer{};
+        auto *oldBuf = cout.rdbuf();
+        auto *newBuf = buffer.open("AnimatedTree.html", ios_base::out | ios_base::trunc);
+        if (oldBuf && newBuf)
+        {
+            cout.rdbuf(newBuf);
+            cout << htmlTemplate1;
+        }
+#endif
         AVLTreeT<node2::NodePtr, node2::traits> tree{};
         for( auto i=1; i<argc; ++i )
         {
@@ -45,7 +60,8 @@ int main(int argc, char **argv)
                 uint64_t data = std::strtoull(str, &strend, 10);
                 if (errno == 0)
                 {
-                    auto node = make_node<uint64_t>(data);
+                    // auto node = make_node<uint64_t>(data);
+                    auto node = node2::create(data);
                     if (node)
                     {
                         auto success = tree.insertNode(std::move(node));
@@ -60,6 +76,15 @@ int main(int argc, char **argv)
                     std::cerr << "Error: bad integer: " << str << std::strerror(errno) << "\n";
                 }
         }
+
+#ifdef DEBUG
+        if (oldBuf && newBuf)
+        {
+            cout << htmlTemplate2 << endl;
+            cout.flush();
+            cout.rdbuf(oldBuf);
+        }
+#endif
 
         if( dottyOutput )
         {
@@ -86,7 +111,8 @@ int main(int argc, char **argv)
 
 static void lowerBound(AVLTreeT<node2::NodePtr, node2::traits> &t, uint64_t v)
 {
-    node2::NodePtr node = make_node<uint64_t>(v);
+    // node2::NodePtr node = make_node<uint64_t>(v);
+    node2::NodePtr node = node2::create(v);
     // node.data = v;
     const auto &n = t.lowerBound(node);
     if(n)
@@ -105,7 +131,8 @@ static void runTest()
     
     for( auto i=0ull; i<=50ull; ++i)
     {
-        auto node = make_node<uint64_t>(i * 2);
+        // auto node = make_node<uint64_t>(i * 2);
+        auto node = node2::create(i * 2);
         tree.insertNode(std::move(node));
     }
 
@@ -119,6 +146,7 @@ static void runTest()
     lowerBound(tree, 99);
     
 }
+
 
 static void test2()
 {

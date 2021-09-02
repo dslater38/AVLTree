@@ -13,6 +13,13 @@ file(GLOB HEADER_FILES *.h)
 source_group("Headers" FILES ${HEADER_FILES})
 
 
+
+if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+	set(CMAKE_EXECUTABLE_SUFFIX ".html")
+	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --emrun")
+
+endif()
+
 # set(SOURCE_FILES 
 # main.cpp 
 # AVLTree.cpp 

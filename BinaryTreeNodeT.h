@@ -3,12 +3,39 @@
 #pragma once
 #include <memory>
 
-template<typename Data>
+struct UniqueNodePtr
+{
+    template<typename T>
+    using type = std::unique_ptr<T>;
+
+
+    template<typename T, typename... Args>
+    static inline type<T> create(Args &&... args)
+    {
+        return std::make_unique<T>(std::forward<Args>(args)...);
+    }
+};
+
+
+struct RawNodePtr
+{
+    template<typename T>
+    using type = T *;
+
+    template<typename T, typename... Args>
+    static inline type<T> create(Args &&... args)
+    {
+        return new T{ std::forward<Args>(args)... };
+    }
+};
+
+
+template<typename Data, typename PType = UniqueNodePtr>
 class BinaryTreeNodeT
 {
 public:
-    using Node = BinaryTreeNodeT<Data>;
-    using NodePtr = std::unique_ptr<Node>;
+    using Node = BinaryTreeNodeT<Data, PType>;
+    using NodePtr = typename PType::template type<BinaryTreeNodeT<Data, PType>>;// std::unique_ptr<Node>;
     BinaryTreeNodeT() = default;
     BinaryTreeNodeT(const BinaryTreeNodeT &) = default;
     BinaryTreeNodeT &operator=(const BinaryTreeNodeT &) = default;
@@ -28,6 +55,12 @@ public:
 
     int8_t bf()const { return bf_; }
     int8_t &bf() { return bf_; }
+
+    template<typename... Args>
+    static NodePtr create(Args &&... args)
+    {
+        return PType::template create<Node>(std::forward<Args>(args)...);
+    }
 
     const Data& data()const { return data_; };
     struct traits;
@@ -50,14 +83,14 @@ namespace std
     };
 }
 
-template<typename Data, typename... Args>
-typename BinaryTreeNodeT<Data>::NodePtr make_node(Args &&... args)
-{
-    return std::make_unique<BinaryTreeNodeT<Data>>(std::forward<Args>(args)...);
-}
+//template<typename Data, typename... Args>
+//typename BinaryTreeNodeT<Data>::NodePtr make_node(Args &&... args)
+//{
+//    // return std::make_unique<BinaryTreeNodeT<Data>>(std::forward<Args>(args)...);
+//}
 
-template<typename Data>
-struct BinaryTreeNodeT<Data>::traits
+template<typename Data, typename PtrType>
+struct BinaryTreeNodeT<Data, PtrType>::traits
 {
     using Node = typename BinaryTreeNodeT<Data>::Node;
     using NodePtr = typename BinaryTreeNodeT<Data>::NodePtr;

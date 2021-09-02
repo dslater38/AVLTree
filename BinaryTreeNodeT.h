@@ -40,12 +40,12 @@ private:
 
 namespace std
 {
-    template<typename Data>
-    struct less<BinaryTreeNodeT<Data>>
+    template<class Data>
+    struct less< unique_ptr<BinaryTreeNodeT<Data>> >
     {
-        constexpr bool operator()(const BinaryTreeNodeT<Data>& lhs, const BinaryTreeNodeT<Data>& rhs) const
+        constexpr bool operator()(const unique_ptr<BinaryTreeNodeT<Data>> &lhs, const unique_ptr<BinaryTreeNodeT<Data>> &rhs) const
         {
-            return lhs.data() < rhs.data();
+            return lhs && rhs ? lhs->data() < rhs->data() : false;
         }
     };
 }

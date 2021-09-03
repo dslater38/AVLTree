@@ -95,7 +95,8 @@ int main(int argc, char **argv)
 #endif
             while(tree.rootNode())
             {
-                tree.removeNode(tree.rootNode());
+                auto n = tree.removeNode(tree.rootNode());
+                node2::destroy(n);
             }
 #ifdef DEBUG
             if (oldBuf && newBuf)

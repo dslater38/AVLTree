@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="node2">
+        <DisplayString>{{left={left} right={right}}}</DisplayString>
+        <Expand>
+            <ExpandedItem>left</ExpandedItem>
+            <ExpandedItem>right</ExpandedItem>
+        </Expand>
+    </Type>
+    <Type Name="AVLTreeT&lt;*&gt;">
+        <DisplayString>{{root={root}}}</DisplayString>
+        <Expand>
+            <ExpandedItem>root</ExpandedItem>
+        </Expand>
+    </Type>
+    <Type Name="BinaryTreeNodeT&lt;*&gt;">
+        <DisplayString>{{data={data_} bf={bf_} left={leftNode} right={rightNode}}</DisplayString>
+        <Expand>
+            <ExpandedItem>data_</ExpandedItem>
+            <ExpandedItem>bf_</ExpandedItem>
+            <ExpandedItem>leftNode</ExpandedItem>
+            <ExpandedItem>rightNode</ExpandedItem>
+        </Expand>
+    </Type>
+</AutoVisualizer>

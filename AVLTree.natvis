@@ -3,23 +3,39 @@
     <Type Name="node2">
         <DisplayString>{{left={left} right={right}}}</DisplayString>
         <Expand>
-            <ExpandedItem>left</ExpandedItem>
-            <ExpandedItem>right</ExpandedItem>
+            <Item Name="left">left</Item>
+            <Item Name="right">right</Item>
         </Expand>
     </Type>
     <Type Name="AVLTreeT&lt;*&gt;">
         <DisplayString>{{root={root}}}</DisplayString>
         <Expand>
-            <ExpandedItem>root</ExpandedItem>
+            <Item Name="root">root</Item>
         </Expand>
     </Type>
     <Type Name="BinaryTreeNodeT&lt;*&gt;">
         <DisplayString>{{data={data_} bf={bf_} left={leftNode} right={rightNode}}</DisplayString>
         <Expand>
-            <ExpandedItem>data_</ExpandedItem>
-            <ExpandedItem>bf_</ExpandedItem>
-            <ExpandedItem>leftNode</ExpandedItem>
-            <ExpandedItem>rightNode</ExpandedItem>
+            <Item Name="data">data_</Item>
+            <Item Name="bf">bf_</Item>
+            <Item Name="left">leftNode</Item>
+            <Item Name="right">rightNode</Item>
+        </Expand>
+    </Type>
+    <Type Name="VirtBlock">
+        <DisplayString>{{addr={address} size={size}}}</DisplayString>
+        <Expand>
+            <Item Name="address">address</Item>
+            <Item Name="size">size</Item>
+        </Expand>
+    </Type>
+    <Type Name="VMNode">
+        <DisplayString>{{addr={data.address} size={data.size} left={east} right={west}}}</DisplayString>
+        <Expand>
+            <Item Name="data">data</Item>
+            <Item Name="bf">bf_ew</Item>
+            <Item Name="left">east</Item>
+            <Item Name="right">west</Item>
         </Expand>
     </Type>
 </AutoVisualizer>

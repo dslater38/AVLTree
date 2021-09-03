@@ -8,6 +8,8 @@ struct UniqueNodePtr
     template<typename T>
     using type = std::unique_ptr<T>;
 
+    template<typename T>
+    using fArgType = type<T> &;
 
     template<typename T, typename... Args>
     static inline type<T> create(Args &&... args)
@@ -27,6 +29,9 @@ struct RawNodePtr
     {
         return new T{ std::forward<Args>(args)... };
     }
+
+    template<typename T>
+    using fArgType = type<T>;
 };
 
 
@@ -36,6 +41,7 @@ class BinaryTreeNodeT
 public:
     using Node = BinaryTreeNodeT<Data, PType>;
     using NodePtr = typename PType::template type<BinaryTreeNodeT<Data, PType>>;// std::unique_ptr<Node>;
+    using NodePtrArg = typename PType::template fArgType<BinaryTreeNodeT<Data, PType>>;
     BinaryTreeNodeT() = default;
     BinaryTreeNodeT(const BinaryTreeNodeT &) = default;
     BinaryTreeNodeT &operator=(const BinaryTreeNodeT &) = default;

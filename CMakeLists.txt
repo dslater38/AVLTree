@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.0)  # CMake version check
+cmake_minimum_required(VERSION 3.10)  # CMake version check
+cmake_policy(SET  CMP0066 NEW)
 project(AVLTree)               # Create project "simple_example"
 set(CMAKE_CXX_STANDARD 17)            # Enable c++14 standard
 set(CMAKE_C_FLAGS_DEBUG -DDEBUG)
+set(CMAKE_CXX_FLAGS_DEBUG -DDEBUG)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS -DDEBUG)
 
 
@@ -11,7 +13,6 @@ file(GLOB SOURCE_FILES *.cpp)
 file(GLOB HEADER_FILES *.h)
 
 source_group("Headers" FILES ${HEADER_FILES})
-
 
 
 if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)

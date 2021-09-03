@@ -11,42 +11,12 @@
 #include <stack>
 #include "PrintTree.h"
 
-//template<typename Data>
-//struct AVLNodeT
-//{
-//	Data	data{};
-//	AVLNodeT<Data> *left{nullptr};
-//	AVLNodeT<Data> *right{nullptr};
-//};
-//
-//namespace std {
-//	template<typename Data>
-//	struct less<AVLNodeT<Data>>
-//	{
-//		constexpr bool operator()( const AVLNodeT<Data>& lhs, const AVLNodeT<Data>& rhs ) const
-//		{
-//			return less<Data>{}(lhs.data, rhs.data);
-//		}
-//		constexpr bool operator()( const AVLNodeT<Data>* lhs, const AVLNodeT<Data>& rhs ) const
-//		{
-//			return lhs ? less<Data>{}(lhs->data, rhs.data) : false;
-//		}
-//		constexpr bool operator()( const AVLNodeT<Data>& lhs, const AVLNodeT<Data>* rhs ) const
-//		{
-//			return rhs ? less<Data>{}(lhs.data, rhs->data) : false;
-//		}
-//		constexpr bool operator()( const AVLNodeT<Data>* lhs, const AVLNodeT<Data>* rhs ) const
-//		{
-//			return (lhs && rhs ) ? less<Data>{}(lhs->data, rhs->data) : false;
-//		}
-//	};
-//}
-
 template<typename NodePtr, typename traits=typename NodePtr::traits, typename DefaultCompare=std::less<NodePtr>>
 class AVLTreeT
 {
 public:
 	using value_type = NodePtr;
+	using NodePtrArg = typename std::conditional<std::is_pointer<NodePtr>::value, NodePtr, NodePtr &>::type;
 
 public:
 	AVLTreeT()=default;
@@ -60,7 +30,7 @@ public:
 	struct const_reverse_iterator;
 
 	template<typename Compare=DefaultCompare>
-	NodePtr removeNode(const NodePtr &pNode, const Compare &cmp=Compare{});
+	NodePtr removeNode(const NodePtrArg pNode, const Compare &cmp=Compare{});
 
 	template<typename Compare=DefaultCompare>
 	bool insertNode(NodePtr pNode, const Compare &cmp=Compare{});
@@ -102,10 +72,10 @@ private:
 	// bool  deleteNode(node *&r,const node *pData, int32_t &bf, const Compare &cmp);
 
 	template<typename Compare>
-	NodePtr removeNode(NodePtr &r,const NodePtr &pData, int32_t &bf, const Compare &cmp);
+	NodePtr removeNode(NodePtr &r,const NodePtrArg pData, int32_t &bf, const Compare &cmp);
 
 	template<typename Compare>
-	NodePtr removeNode(NodePtr &r, NodePtr &parent, const NodePtr &pData, int32_t &bf, const Compare &cmp);
+	NodePtr removeNode(NodePtr &r, NodePtrArg parent, const NodePtrArg pData, int32_t &bf, const Compare &cmp);
 
 
 	NodePtr left_rotate(NodePtr &&node);
@@ -113,8 +83,8 @@ private:
 	NodePtr right_left_rotate(NodePtr &&node);
 	NodePtr left_right_rotate(NodePtr &&node);
 	NodePtr rebalance(NodePtr &&node);
-	NodePtr stepDeleteLeft(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf);
-	NodePtr stepDeleteRight(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf);
+	NodePtr stepDeleteLeft(NodePtr &target, NodePtrArg surrogate, NodePtrArg prev, int32_t &bf);
+	NodePtr stepDeleteRight(NodePtr &target, NodePtrArg surrogate, NodePtrArg prev, int32_t &bf);
 private:
 	NodePtr root{};
 #if defined(DEBUG) || defined(_DEBUG)
@@ -124,6 +94,10 @@ private:
 	inline void RANIMATE() { if( !rebalance_msg.empty() ) { animateTree(rebalance_msg); } }
 	inline void animateTree(std::string msg)
 	{
+
+		//std::cout << "======================== " << msg << " ========================\n";
+		//printTree();
+
 		// std::cout << "======================== "	<< msg << " ========================\n";
 		std::cout << "{\"title\" : \'" << msg << "\', \"dot\" : `";
 		dottyTree();
@@ -388,7 +362,7 @@ bool AVLTreeT<NodePtr,traits,DefaultCompare>::insertNode(NodePtr pNewNode, const
 template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
-NodePtr AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(const NodePtr &pNode, const Compare &cmp)
+NodePtr AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(const NodePtrArg pNode, const Compare &cmp)
 {
 	int32_t bf = 0;
 	return removeNode(root, pNode, bf, cmp);
@@ -709,23 +683,49 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::insertNode(NodePtr &r, NodePtr &p, Node
 template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
 NodePtr
-AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteLeft(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf)
+AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteLeft(NodePtr &target, NodePtrArg surrogate, NodePtrArg prev, int32_t &bf)
 {
-	NodePtr rm{};
+	NodePtr rm{nullptr};
 	
 	if( ! Left(surrogate) )
 	{
 		// remove surrogate from it's parent
-		auto tmp = std::move(surrogate);
-		if( Left(prev) == tmp )
+		// and replace it with it's right child
+		const bool isLeftChild = (Left(prev) == surrogate);
+		rm = std::move(surrogate);
+		if(isLeftChild)
 		{
-			Left(prev) = Right(surrogate);
+			Left(prev) = std::forward<NodePtr>(Right(rm));
 		}
 		else
 		{
-			assert(Right(prev) == tmp);			
-			Right(prev) = Right(tmp);			
+			// assert(Right(prev) == tmp);			
+			Right(prev) = std::forward<NodePtr>(Right(rm));
 		}
+		Right(rm) = nullptr;
+#if 0
+		// and exchange surrogate for target
+		// copy target's bf to surrogate, as surrogate is
+		// taking target's place in the tree.
+		traits::bf(tmp, traits::bf(target));
+		// attach target's children to surrogate
+		if (prev.get() == Left(target))
+		{
+			prev = std::ref(Left(tmp));
+		}
+		Left(tmp) = std::forward<NodePtr>(Left(target));
+		if (prev.get() == Right(target))
+		{
+			prev = std::ref(Right(tmp));
+		}
+		Right(tmp) = std::forward<NodePtr>(Right(target));
+
+		rm = std::forward<NodePtr>(target);
+		Left(rm) = nullptr;
+		Right(rm) = nullptr;
+		target = std::forward<NodePtr>(tmp);
+#endif // 0
+#if 0
 		surrogate = std::move(tmp);
 		// and exchange surrogate for target
 		// copy target's bf to surrogate, as surrogate is
@@ -737,6 +737,7 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteLeft(NodePtr &target, NodePtr
 		Left(target) = Right(target) = nullptr;
 		rm = std::move(target);
 		target = std::move(surrogate);
+#endif
 		// traits::swap(target, rm);
 		// std::swap(traits::data(target), traits::data(rm));
 		// surrogate = Right(surrogate);
@@ -752,11 +753,11 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteLeft(NodePtr &target, NodePtr
 	{
 		if( prev == target )
 		{
-			traits::bf(prev, traits::bf(prev) + 1); // bf(prev)--;
+			traits::bf(prev, traits::bf(prev) - 1); // bf(prev)--;
 		}
 		else
 		{
-			traits::bf(prev, traits::bf(prev) - 1); // bf(prev)++;
+			traits::bf(prev, traits::bf(prev) + 1); // bf(prev)++;
 		}
 
 		prev = rebalance(std::forward<NodePtr>(prev));
@@ -773,22 +774,46 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteLeft(NodePtr &target, NodePtr
 template<typename NodePtr, typename traits, typename DefaultCompare>
 inline
 NodePtr
-AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteRight(NodePtr &target, NodePtr &surrogate, NodePtr &prev, int32_t &bf)
+AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteRight(NodePtr &target, NodePtrArg surrogate, NodePtrArg prev, int32_t &bf)
 {
 	NodePtr rm{};
 	
 	if( !Right(surrogate) )
 	{
-		auto tmp = std::move(surrogate);
-		if( Left(prev) == tmp)
+		const bool isLeftChild = (Left(prev) == surrogate);
+		rm = std::move(surrogate);
+		if(isLeftChild)
 		{
-			Left(prev) = Left(tmp);
+			Left(prev) = std::forward<NodePtr>(Left(rm));
 		}
 		else
 		{
-			assert(Right(prev) == tmp);
-			Right(prev) = Left(tmp);
+			Right(prev) = std::forward<NodePtr>(Left(rm));
 		}
+		Left(rm) = nullptr;
+#if 0
+		// and exchange surrogate for target
+		// copy target's bf to surrogate, as surrogate is
+		// taking target's place in the tree.
+		traits::bf(tmp, traits::bf(target));
+		// attach target's children to surrogate
+		if (prev.get() == Left(target))
+		{
+			prev = std::ref(Left(tmp));
+		}
+		Left(tmp) = std::forward<NodePtr>(Left(target));
+		if (prev.get() == Right(target))
+		{
+			prev = std::ref(Right(tmp));
+		}
+		Right(tmp) = std::forward<NodePtr>(Right(target));
+
+		rm = std::forward<NodePtr>(target);
+		Left(rm) = nullptr;
+		Right(rm) = nullptr;
+		target = std::forward<NodePtr>(tmp);
+#endif // 0
+#if 0
 		surrogate = std::move(tmp);
 		// and exchange surrogate for target
 		// copy target's bf to surrogate, as surrogate is
@@ -800,6 +825,7 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteRight(NodePtr &target, NodePt
 		Left(target) = Right(target) = nullptr;
 		rm = std::move(target);
 		target = std::move(surrogate);
+#endif
 //		traits::swap(target, rm);
 //		// std::swap(traits::data(target), traits::data(rm));
 //		surrogate = Left(surrogate);
@@ -908,7 +934,7 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::stepDeleteRight(NodePtr &target, NodePt
 template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline NodePtr
-AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(NodePtr &r, NodePtr &parent, const NodePtr &pData, int32_t &bf, const Compare &cmp)
+AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(NodePtr &r, NodePtrArg parent, const NodePtrArg pData, int32_t &bf, const Compare &cmp)
 {
 	auto direction = 0;
 	NodePtr old{};
@@ -917,12 +943,12 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(NodePtr &r, NodePtr &parent,
 		if( cmp(*pData, *r) )
 		{
 			direction = 1;
-			old = removeNode(Left(r), pData, bf, cmp);
+			old = removeNode(Left(r), r, pData, bf, cmp);
 		}
 		else if( cmp(*r, *pData) )
 		{
 			direction = -1;
-			old = removeNode(Right(r), pData, bf, cmp);
+			old = removeNode(Right(r), r, pData, bf, cmp);
 		}
 		else if( ! Left(r) )
 		{
@@ -944,8 +970,11 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(NodePtr &r, NodePtr &parent,
 					? stepDeleteLeft(r, Right(r), r, bf)
 					: stepDeleteRight(r, Left(r), r, bf);
 
+
+
 			Left(old) = std::move(Left(r));
 			Right(old) = std::move(Right(r));
+			bf(old) = bf(r);
 			if(Left(parent) == r )
 			{
 				Left(parent) = std::move(old);
@@ -986,7 +1015,7 @@ template<typename NodePtr, typename traits, typename DefaultCompare>
 template<typename Compare>
 inline
 NodePtr
-AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(NodePtr &r,const NodePtr &pData, int32_t &bf, const Compare &cmp)
+AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(NodePtr &r,const NodePtrArg pData, int32_t &bf, const Compare &cmp)
 {
 	auto direction = 0;
 	NodePtr old{};
@@ -1019,8 +1048,25 @@ AVLTreeT<NodePtr,traits,DefaultCompare>::removeNode(NodePtr &r,const NodePtr &pD
 		else
 		{
 			old =  ( traits::bf(r) > 0 )
-					? stepDeleteLeft(r, Right(r), r, bf)
-					: stepDeleteRight(r, Left(r), r, bf);
+					? stepDeleteLeft(r, std::forward<NodePtr>(Right(r)), r, bf)
+					: stepDeleteRight(r, std::forward<NodePtr>(Left(r)), r, bf);
+
+			Left(old) = std::move(Left(r));
+			Right(old) = std::move(Right(r));
+			const auto bfSave = traits::bf(r);
+			std::swap(old, r);
+			traits::bf(r, bfSave);
+			//if (Left(parent) == r)
+			//{
+			//	Left(parent) = std::move(old);
+			//}
+			//else
+			//{
+			//	assert(Right(parent) == old);
+			//	Right(parent) = std::move(old);
+			//}
+			
+
 
 			if( traits::bf(r) == 1 || traits::bf(r) == -1 )
 			{

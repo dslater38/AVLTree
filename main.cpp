@@ -77,21 +77,13 @@ int main(int argc, char **argv)
                 }
         }
 
-#ifdef DEBUG
-        if (oldBuf && newBuf)
-        {
-            cout << htmlTemplate2 << endl;
-            cout.flush();
-            cout.rdbuf(oldBuf);
-        }
-#endif
-
         if( dottyOutput )
         {
             dottyTree(tree);
         }
         else
         {
+#if 0
             cout << "================ Iterate the tree ==================================\n";
             for (const auto &n : tree)
             {
@@ -99,6 +91,21 @@ int main(int argc, char **argv)
             }
             cout << "\n====================================================================\n";
             printTree<node2::NodePtr &, node2::traits>(tree.rootNode(), std::shared_ptr<Trunk>{}, false);
+            cout << "\n=====================Delete tree=====================================\n";
+#endif
+            while(tree.rootNode())
+            {
+                tree.removeNode(tree.rootNode());
+            }
+#ifdef DEBUG
+            if (oldBuf && newBuf)
+            {
+                cout << htmlTemplate2 << endl;
+                cout.flush();
+                cout.rdbuf(oldBuf);
+            }
+#endif
+
         }        
     }
     else

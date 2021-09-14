@@ -5,30 +5,31 @@
 #
 #
 
-execute_process(COMMAND git.exe describe --always --tags --long --dirty OUTPUT_VARIABLE GVERSION)
-string(REPLACE "\r\n" "" GVERSION ${GVERSION})
-string(REPLACE "\n" "" GVERSION ${GVERSION})
+execute_process(COMMAND git describe --always --tags --long --dirty OUTPUT_VARIABLE GVERSION)
+message("GVERSION ${GVERSION}")
+string(REPLACE "\r\n" "" GVERSION "${GVERSION}")
+string(REPLACE "\n" "" GVERSION "${GVERSION}")
 
-string(FIND ${GVERSION} - index)
+string(FIND "${GVERSION}" - index)
 math(EXPR index "${index}-1" OUTPUT_FORMAT DECIMAL)
-string(SUBSTRING ${GVERSION} 1 ${index} VERSION)
+string(SUBSTRING "${GVERSION}" 1 ${index} VERSION)
 math(EXPR index "${index}+2" OUTPUT_FORMAT DECIMAL)
-string(SUBSTRING ${GVERSION} ${index} -1 GVERSION)
+string(SUBSTRING "${GVERSION}" ${index} -1 GVERSION)
 
-string(FIND ${GVERSION} - index)
-string(SUBSTRING ${GVERSION} 0 ${index} COMMITS)
+string(FIND "${GVERSION}" - index)
+string(SUBSTRING "${GVERSION}" 0 ${index} COMMITS)
 math(EXPR index "${index}+1" OUTPUT_FORMAT DECIMAL)
-string(SUBSTRING ${GVERSION} ${index} -1 DESC)
+string(SUBSTRING "${GVERSION}" ${index} -1 DESC)
 
 
-string(FIND ${VERSION} . index)
-string(SUBSTRING ${VERSION} 0 ${index} VERSION_MAJOR)
+string(FIND "${VERSION}" . index)
+string(SUBSTRING "${VERSION}" 0 ${index} VERSION_MAJOR)
 math(EXPR index "${index}+1" OUTPUT_FORMAT DECIMAL)
-string(SUBSTRING ${VERSION} ${index} -1 VERSION)
-string(FIND ${VERSION} . index)
-string(SUBSTRING ${VERSION} 0 ${index} VERSION_MINOR)
+string(SUBSTRING "${VERSION}" ${index} -1 VERSION)
+string(FIND "${VERSION}" . index)
+string(SUBSTRING "${VERSION}" 0 ${index} VERSION_MINOR)
 math(EXPR index "${index}+1" OUTPUT_FORMAT DECIMAL)
-string(SUBSTRING ${VERSION} ${index} -1 VERSION_PATCH)
+string(SUBSTRING "${VERSION}" ${index} -1 VERSION_PATCH)
 
 string(JOIN "" VERSION_OUT 
  "extern const char LIBRARY_VERSION_STR[]\;\n"

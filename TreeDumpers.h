@@ -5,12 +5,30 @@
 #include <string>
 #include <iostream>
 #include <type_traits>
+#include "PrintTree.h"
 
 enum class OutputType
 {
 	NoOutput = 0,
 	TextOutput = 1,
 	DotOutput = 2
+};
+
+struct NopDumper
+{
+	TreeDumper(std::ostream &=std::cout) {}
+
+	template<typename Tree>
+	void REBALANCEMSG(const std::string &, const Tree &){}
+
+	template<typename Tree>
+	void ANIMATE(const std::string &, const Tree &){}
+
+	template<typename Tree>
+	void RANIMATE(const Tree &){}
+
+	static void setOutputType(OutputType ){}
+
 };
 
 class TreeDumper

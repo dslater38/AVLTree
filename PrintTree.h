@@ -3,6 +3,8 @@
 #pragma once
 
 #include <iomanip>
+#include <memory>
+#include <sstream>
 
 template<typename NodePtr, typename traits>
 inline int32_t height(const NodePtr &r)

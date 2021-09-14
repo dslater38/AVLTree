@@ -11,7 +11,9 @@
 #include <stack>
 #include "PrintTree.h"
 
-template<typename NodePtr, typename traits=typename NodePtr::traits, typename Compare=std::less<NodePtr>>
+template<typename NodePtr, 
+		typename traits=typename NodePtr::traits, 
+		typename Compare=std::less<NodePtr>>
 class AVLTreeT
 {
 public:

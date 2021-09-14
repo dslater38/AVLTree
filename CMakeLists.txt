@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)  # CMake version check
+cmake_minimum_required(VERSION 3.20)  # CMake version check
 
  # Enable IPO 
 cmake_policy(SET CMP0069 NEW)
@@ -29,6 +29,7 @@ set(LIBRARY_SOURCES AVLTree.cpp
 html_template.cpp
 TreeDumpers.cpp
 VMVirtAddrManager.cpp
+JavascriptTree.cpp
 version.cpp)
 
 set(LIBRARY_HEADERS AVLTree.h
@@ -44,8 +45,9 @@ source_group("Headers" FILES ${LIBRARY_HEADERS})
 
 
 if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+	add_compile_options(--bind)
 	set(CMAKE_EXECUTABLE_SUFFIX ".html")
-	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --emrun")
+	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} --bind --emrun")
 
 endif()
 

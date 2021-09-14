@@ -12,12 +12,12 @@ struct UniqueNodePtr
     using fArgType = type<T> &;
 
     template<typename T, typename... Args>
-    static inline type<T> create(Args &&... args)
+    static inline std::unique_ptr<T> create(Args &&... args)
     {
         return std::make_unique<T>(std::forward<Args>(args)...);
     }
 
-    template<typename T, typename... Args>
+    template<typename T>
     static inline void destroy(type<T> &t)
     {
         t.reset();
@@ -39,7 +39,7 @@ struct RawNodePtr
     template<typename T>
     using fArgType = type<T>;
 
-    template<typename T, typename... Args>
+    template<typename T>
     static inline void destroy(type<T> &t)
     {
         delete t;
@@ -62,7 +62,7 @@ public:
     ~BinaryTreeNodeT() = default;
     template<typename... Args>
     BinaryTreeNodeT(Args &&... args) 
-        : data_{ std::forward<Args>(args)... }
+        : data_( std::forward<Args>(args)... )
     {
     }
 
